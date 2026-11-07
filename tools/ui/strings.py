@@ -115,11 +115,9 @@ S = [
 ("err_engine_title", "智能体引擎启动失败", "The agent engine failed to start"),
 ("err_engine_lost_title", "引擎连接已断开", "Engine connection lost"),
 ("err_engine_lost", "智能体引擎意外退出，本轮已中断。", "The agent engine exited unexpectedly; this turn was interrupted."),
-("err_no_key_title", "尚未登录或设置 API Key", "Not signed in and no API key"),
 ("err_no_key", "登录 DeepSeek 账号，或在 设置 › 模型 中添加 API Key 后再试。", "Sign in to your DeepSeek account, or add an API Key in Settings › Models, then try again."),
 ("err_invalid_key", "API Key 无效", "Invalid API Key"),
 ("err_quota", "当前请求的额度已用尽", "The quota for this request is used up"),
-("set_api_key", "设置 API Key", "Set API Key"),
 ("restart_engine_retry", "重启引擎并重试", "Restart engine and retry"),
 ("retry", "重试", "Retry"),
 ("retry_continue_prompt", "继续", "Continue"),
@@ -278,6 +276,16 @@ S = [
 ("set_permission", "权限", "Permission"),
 ("set_permission_desc", "新会话默认使用的权限预设", "Default preset for new sessions"),
 ("set_appearance", "外观", "Appearance"),
+("set_performance", "能耗模式", "Energy mode"),
+("set_performance_desc", "决定助手如何花费 token：不改变当前模型", "How the assistant spends tokens — never which model it uses"),
+("mode_electric", "电荷", "Charge"), ("mode_leaf", "叶绿", "Leaf"),
+("mode_electric_tagline", "快，而且质量高", "Fast, and still good"),
+("mode_leaf_tagline", "尽量省 token", "Spend as little as possible"),
+("mode_electric_desc", "全力思考，保留全部技能，任务结束后自动总结经验。要求一轮做完、少来回。", "Full reasoning effort, every skill kept, and a self-review call after device tasks. Asks for one-pass work with few round trips."),
+("mode_leaf_desc", "低思考强度，不加载技能目录，不做额外模型调用。回答尽量短，跳过可选步骤。", "Low effort, no skill catalogue, no extra model calls. Short answers, optional steps skipped."),
+("mode_in_use", "使用中", "In use"),
+("mode_switch_desc", "能耗模式：%1$s", "Energy mode: %1$s"),
+("mode_switch_hint", "切换会同时更换配色", "Switching also changes the palette"),
 ("theme_light", "浅色", "Light"), ("theme_dark", "深色", "Dark"), ("theme_system", "跟随系统", "System"),
 ("set_language", "语言", "Language"),
 ("set_language_desc", "在系统设置中为 DSH 选择语言", "Choose DSH's language in system settings"),
@@ -410,7 +418,6 @@ S = [
 ("acct_timeout_desc", "请重新登录后继续操作。", "Sign in again to continue."),
 ("acct_failure_title", "登录失败", "Could not sign in"),
 ("acct_loading", "加载中…", "Loading…"),
-("acct_menu", "账号菜单", "Account menu"),
 ("acct_nav", "账号与余额", "Account"),
 ("acct_signed_in", "已登录 DeepSeek", "Signed in to DeepSeek"),
 ("acct_signed_out", "尚未登录", "Not signed in"),
@@ -433,7 +440,6 @@ S = [
 ("acct_balance", "充值余额", "Topped-up balance"),
 ("acct_bonus_balance", "赠金余额", "Granted balance"),
 ("acct_balance_unavailable", "前往开放平台查看", "View on Platform"),
-("acct_balance_signed_out", "登录后查看", "Sign in to view"),
 ("acct_info", "更多账号信息", "More account information"),
 ("acct_more", "更多", "More"),
 ("acct_usage", "查询用量", "View usage"),
@@ -445,7 +451,6 @@ S = [
 ("onb_sign_in", "登录 DeepSeek 账号", "Sign in with DeepSeek"),
 ("onb_use_key", "使用 API Key", "Use an API Key"),
 ("onb_tagline", "一句话交给手机去办。它会找文件、开应用、点屏幕、跑自动化，有风险的操作先问你。", "Tell your phone what to do in one sentence. It finds files, opens apps, taps through screens and runs automations — and asks before anything risky."),
-("onb_key_title", "连接 DeepSeek", "Connect DeepSeek"),
 ("onb_key_body", "粘贴你的 API Key。它只加密保存在这台手机上，并且只发送给 DeepSeek。", "Paste your API Key. It is encrypted on this phone and only sent to DeepSeek."),
 ("onb_disclaimer", "社区项目，与 DeepSeek 官方无关。", "Community project, not affiliated with DeepSeek."),
 # ui-ux review fixes
@@ -480,7 +485,6 @@ S = [
 ("run_outcome_started", "已开始", "Started"),
 ("run_outcome_failed", "失败：%1$s", "Failed: %1$s"),
 ("api_key_label", "API Key", "API Key"),
-("loading", "加载中…", "Loading…"),
 ("set_web_group", "网页", "Web"),
 ("about_disclaimer_title", "声明", "Disclaimer"),
 ("about_oss_title", "开源许可", "Open-source licenses"),
@@ -513,12 +517,10 @@ S = [
 ("prov_delete", "删除服务商", "Delete provider"),
 ("prov_err_url", "请填写 https:// 或 http:// 开头的接口地址", "Enter a base URL starting with https:// or http://"),
 ("prov_err_key", "请填写 API Key", "Enter the API key"),
-("prov_err_models", "至少勾选一个模型", "Check at least one model"),
 ("prov_model_desc", "使用该模型默认的推理设置", "Uses the model's default reasoning settings"),
 ("onb_third_party", "使用其他模型服务（OpenAI 兼容）", "Use another model provider (OpenAI-compatible)"),
 ("web_search_needs_key", "需要 DeepSeek API Key", "Needs a DeepSeek API key"),
 ("web_search_off_desc", "当前选用第三方模型。联网搜索由 DeepSeek 提供，需要 DeepSeek API Key；网页读取不受影响。", "A third-party model is selected. Web search is provided by DeepSeek and needs a DeepSeek API key; reading web pages still works."),
-("rule_missing", "这个自动化任务已不存在", "This automation no longer exists"),
 ]
 def esc(s):
     s = s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace("'", "\\'").replace('"', '\\"')
@@ -528,12 +530,32 @@ def esc(s):
 keys = [k for k, _, _ in S]
 dups = {k for k in keys if keys.count(k) > 1}
 assert not dups, dups
+import xml.etree.ElementTree as ET
+def kept_entries(path):
+    """Entries this table does not own, so running the generator never deletes them.
+
+    The table covers only part of strings.xml (features added straight to the file, and the
+    hand-maintained values-ru are not in it). Before this guard, one run silently dropped ~290
+    strings and broke the build.
+    """
+    if not os.path.exists(path):
+        return []
+    try:
+        root = ET.parse(path).getroot()
+    except Exception:
+        return []
+    table = {row[0] for row in S}
+    return [(e.get('name'), e.text or '') for e in root if e.tag == 'string' and e.get('name') and e.get('name') not in table]
 for d, idx in (('values', 1), ('values-en', 2)):
     os.makedirs(os.path.join(out, d), exist_ok=True)
-    with open(os.path.join(out, d, 'strings.xml'), 'w') as f:
+    path = os.path.join(out, d, 'strings.xml')
+    kept = kept_entries(path)
+    with open(path, 'w', encoding='utf-8') as f:
         f.write('<?xml version="1.0" encoding="utf-8"?>\n<!-- Generated by tools/ui/strings.py (zh primary, en in values-en). Edit the table there. -->\n<resources>\n')
         for row in S:
             v = row[idx]
             f.write(f'    <string name="{row[0]}">{esc(v)}</string>\n')
+        for name, v in kept:
+            f.write(f'    <string name="{name}">{esc(v)}</string>\n')
         f.write('</resources>\n')
-print(len(S))
+print(len(S), "+ kept", len(kept))

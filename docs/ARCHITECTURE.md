@@ -2,7 +2,7 @@
 
 DSH-Android 把 DeepSeek Harness（dsh）跑在手机上：Node 24 编译成 bionic 共享库 `libnode.so`，通过 JNI 在独立的 `:engine` 进程里启动 dsh；设备能力全部由 Kotlin 实现，经一条私有 socket 暴露给 dsh。协议细节见 [ENGINE-CONTRACT.md](ENGINE-CONTRACT.md)，引擎包见 [js/README.md](../js/README.md)，原生构建见 [native/README.md](../native/README.md)。
 
-代码路径相对 `app/src/main/java/io/github/jackwener/dsh/`。
+代码路径相对 `app/src/main/java/io/github/lazy/dsh/`。
 
 ## 进程模型
 
@@ -22,7 +22,7 @@ Shizuku 用户服务（shell uid，可选）：ShellUserService
 
 - Node 每个进程只能初始化一次，所以引擎独占一个进程，退出即杀进程，下次按需重开。引擎崩溃不影响 UI。
 - 无障碍、通知监听、输入法服务由系统绑定在默认进程，因此所有设备工具在 `:main` 执行。
-- `:main` 与 `:engine` 之间只有一个 AIDL 调用 `IEngineService.start(env)`，用来把三个 fd（SDK 管道两端、能力桥 socket）交给 `:main`；之后的通信都走这些 fd。不开任何网络端口（账号登录时的 127.0.0.1 回调除外，见下文）。
+- `:main` 与 `:engine` 之间只有一个 AIDL 调用 `IEngineService.start(env)`，用来把三个 fd（SDK 管道两端、能力桥 socket）交给 `:main`；之后的通信都走这些 fd，不开任何网络端口。
 - minSdk 29，targetSdk 36，仅 arm64-v8a。可执行文件都以 `lib*.so` 形式放在 nativeLibraryDir（`extractNativeLibs=true`），这是 targetSdk ≥ 29 下唯一允许 exec 的位置。
 
 ## 引擎生命周期（core/engine/）
@@ -48,9 +48,9 @@ Shizuku 用户服务（shell uid，可选）：ShellUserService
 | `DSH_ANDROID_KEY_<ID>` | 每个已启用且存了 key 的第三方服务商一个 |
 | `HTTP(S)_PROXY` / `NO_PROXY` | 系统为当前网络设置了代理（Wi-Fi 代理、全局代理、VPN 的代理模式）时才设置，和 `HttpURLConnection`（获取模型列表）走同一条路；排除列表照搬 Android（含 `192.168.*` 这类通配，js patch 15），回环地址总是直连。PAC 不支持。引擎启动时读取，代理变化在下次启动生效 |
 
-启动后先请求 `account/state`，再 `initialize`（provider、model、reasoningEffort 都是进程级的）。模型、思考强度或凭据路由变化时：本代引擎还没开过会话就重新 `initialize`，开过会话就在空闲时重启。第三方服务商的配置（用户 patch 层 + key 环境变量，见下文“模型服务”）只在进程启动时读取，变化后在空闲时重启。
+启动后直接 `initialize`（provider、model、reasoningEffort 都是进程级的）；不再请求 `account/state`（登录已移除）。模型、思考强度或凭据路由变化时：本代引擎还没开过会话就重新 `initialize`，开过会话就在空闲时重启。第三方服务商的配置（用户 patch 层 + key 环境变量，见下文“模型服务”）只在进程启动时读取，变化后在空闲时重启。
 
-**停止**：没有运行中的会话且账号登录不在进行时，空闲 5 分钟后发 `shutdown`，等进程退出（超时则直接杀）。SDK 没有按会话取消的方法，所以用户点“停止”就是停掉整个引擎进程。
+**停止**：没有运行中的会话时空闲 5 分钟后发 `shutdown`，等进程退出（超时则直接杀）。SDK 没有按会话取消的方法，所以用户点“停止”就是停掉整个引擎进程。
 
 **崩溃恢复**：SDK 管道 EOF、binder 死亡、`onServiceDisconnected` 三个信号只算一次。`RestartPolicy` 按 1/2/4 秒退避；10 分钟内 3 次失败就熔断，熔断期间不自动重启，自动化直接失败；稳定运行 60 秒后清零。dsh 的 `session/resume` 只会关闭悬空的工具调用，不会续跑，所以 `SessionStore.onEngineLost` 在退避后对每个中断的根会话 resume，再发一条续跑提示（告诉模型已有结果的工具调用不要重做）。每个任务最多自动续跑一次，再次中断或熔断时显示带“继续”按钮的错误。两个进程都被杀时，下次启动把残留的“运行中”会话标为中断。dsh 在事件持久化之前就会发通知，重启后的引擎可能复用序号，`LogSeqs` 按引擎代次给序号加偏移。
 
@@ -62,7 +62,7 @@ Shizuku 用户服务（shell uid，可选）：ShellUserService
 
 ## 两条通道
 
-**SDK 通道**（stdin/stdout）：dsh 原样的 SDK JSON-RPC 2.0，App 是客户端。用到的方法有 `initialize`、`session/prompt`、`session/resume`、`shutdown`、`android/session/permission`、`android/session/mode`，以及 `account/*`。dsh 发来的服务端请求有 `approval/request`、`user-question/ask`。每个 `session.event` 都原样写进 Room 的 `events` 表；对话视图和轨迹视图都是这份日志的投影（`core/session/Projection.kt`）。
+**SDK 通道**（stdin/stdout）：dsh 原样的 SDK JSON-RPC 2.0，App 是客户端。用到的方法有 `initialize`、`session/prompt`、`session/resume`、`shutdown`、`android/session/permission`、`android/session/mode`（`account/*` 仍由引擎提供，但 App 不再调用）。dsh 发来的服务端请求有 `approval/request`、`user-question/ask`。每个 `session.event` 都原样写进 Room 的 `events` 表；对话视图和轨迹视图都是这份日志的投影（`core/session/Projection.kt`）。
 
 **能力桥**（`DSH_BRIDGE_FD`，AF_UNIX socketpair，换行分隔的 JSON-RPC）：`plugin-device` 调用 `capability/list` 把每个 `ToolDescriptor` 注册成 dsh 工具，再用 `capability/invoke` 执行。工具描述是静态的，Shizuku 是否可用、权限是否授予都放在调用结果里返回，避免改动描述导致整段缓存的 prompt 重新计费。超时和取消规则见契约 §3.1：每个工具有一个 `timeoutMs`，App 在截止前 5 秒作答；插件超时或本轮中止时发 `capability/cancel`；所有等待在动手前都会再检查一次调用是否仍然有效。
 
@@ -79,6 +79,7 @@ Shizuku 用户服务（shell uid，可选）：ShellUserService
 | notifications | `notification_list`（敏感）；`notification_dismiss` `notification_open`；`notification_reply`（危险） |
 | comms | `contacts_search` `sms_read` `calendar_read` `call_log_read`（敏感）；`calendar_add` `calendar_new_event`（打开日历自带的新建页，无需日历权限）；`sms_send`（危险） |
 | media / clipboard | `media_control`；`clipboard_get`（敏感）`clipboard_set` |
+| image | `image_generate`：调用用户在 设置 → 模型服务 → 生图 里配置的 OpenAI 兼容 `/images/generations` 接口（地址、模型、尺寸、key 分开存，key 在 SecretStore）。`b64_json` 和 `url` 两种返回都支持；原图存相册 `Pictures/DSH/`，对话里显示 ≤1280px 的 JPEG 预览（`ShotStore`）。没有配置或 key 时返回明确错误，不伪造图片 |
 | browser | `browser_open` `browser_read` `browser_screenshot` `browser_scroll` `browser_back` `browser_click` `browser_type`：App 内一个不显示在屏幕上的 WebView |
 | rules | `rule_create` `rule_list` `rule_update` `rule_delete` |
 
@@ -126,26 +127,28 @@ Shizuku 用户服务（shell uid，可选）：ShellUserService
 - 系统助手：`DshVoiceInteractionService` 从 `AssistStructure` 取得当前屏幕内容（长按电源键或手势唤起）。DSH 没有语音识别，`DshRecognitionService` 只是为了能被选为助手。
 - 快捷设置磁贴 `QuickTileService`。
 - 分享：`SEND`/`SEND_MULTIPLE`，文字、图片和文件放进输入框，由用户确认后发送。
-- `io.github.jackwener.dsh.RUN_TASK`（extra `task`）：受“允许其他 App 调用”开关控制，默认关闭，关闭时提示并拒绝；不附带屏幕内容。
+- `io.github.lazy.dsh.RUN_TASK`（extra `task`）：受“允许其他 App 调用”开关控制，默认关闭，关闭时提示并拒绝；不附带屏幕内容。
 
 面板顶部显示“当前页面”标签，可以取消附带。
 
 ## 界面（feature/）
 
-- `MainActivity` 用 Navigation Compose，没有底部导航。没有凭据时先进入引导页（API key 或账号登录），然后是可选的 Shizuku 增强步骤，最后到首页。
-- 首页 `HomeScreen`：单会话页，左侧是模态抽屉 `SessionDrawer`（新会话、自动化、会话列表、账号）。顶部在“对话 / 轨迹”两个视图之间切换。对话视图（`Stream`、`ToolRows`）把工具调用折叠成步骤行；轨迹视图（`feature/trajectory/`）移植自 dsh ui-trajectory：时间轴总览，加按轮次分组的记录，点开是检查器。
+- `MainActivity` 用 Navigation Compose，没有底部导航。没有凭据时先进入引导页（DeepSeek API Key），然后是可选的 Shizuku 增强步骤，最后到首页。
+- 首页 `HomeScreen`：单会话页，左侧是模态抽屉 `SessionDrawer`（新会话、自动化、会话列表、设置）。顶部在“对话 / 轨迹”两个视图之间切换。对话视图（`Stream`、`ToolRows`）把工具调用折叠成步骤行；轨迹视图（`feature/trajectory/`）移植自 dsh ui-trajectory：时间轴总览，加按轮次分组的记录，点开是检查器。
 - 输入框位置一次只显示一样东西，优先级是：授权卡片 → 审批卡片 → 问题卡片 → 输入框。运行中发送的消息默认进入队列（可在设置里改）。附件支持最多 4 张图片，文档会复制到 `home/attachments`。
-- 输入框工具栏：`+`、权限标签、会话模式标签、上下文环、模型标签、发送。
-- 设置 `SettingsScreen`：分为账号、通用、模型服务、能力（工具组开关）、会话模式（列表 + 编辑页）、用量、手机权限（`PermissionCatalog`，各项权限用到时才申请）、关于（自检 `ReliabilityDoctor`、引擎重启、崩溃记录）。
+- 输入框工具栏：`+`、能耗模式开关、合并后的「权限与模式」标签、发送；模型名与上下文环在窄屏上单独占一行说明行。
+- 设置 `SettingsScreen`：分为通用、模型服务、能力（工具组开关）、会话模式（列表 + 编辑页）、用量、手机权限（`PermissionCatalog`，各项权限用到时才申请）、关于（自检 `ReliabilityDoctor`、引擎重启、崩溃记录）。
 - 视觉对齐 dsh Web：颜色、字号、圆角取自 dsh 的 ui-theme，映射到 Material 3，不启用动态取色。见 [design-tokens.md](design-tokens.md) 和 `core/designsystem/`。
 
-## 账号登录
+## 账号登录（已移除）
 
-dsh-base 自带 DeepSeek 账号 provider（OAuth + PKCE，凭据存在 `DSH_HOME`）。`plugin-account` 补上回环回调服务器，并把账号操作暴露为 SDK 方法 `account/*` 和通知 `account.*`（契约 §2.4）。授权页在 App 内的 WebView 里打开（`PlatformWebScreen`），回调到 `http://127.0.0.1:<port>/oauth/callback`（`network_security_config` 只对 127.0.0.1 和 localhost 允许明文）。完成页通过 `intent://…;scheme=dsh-android` 回到 App。路由优先级和 dsh 一致：配置了 API key 就用 `deepseek-official`，否则在已登录时用 `deepseek-account`。API key 用 Android Keystore 的 AES-GCM 加密，存在 `noBackupFilesDir`；`allowBackup=false`。
+这个 fork **不提供** DeepSeek 账号登录，只走 API Key：引导页、设置、抽屉里的登录入口、登录页（`PlatformWebScreen`）和 `account/*` 客户端在 2026-11 全部删除。引擎里的 `@dsh-android/plugin-account` 仍然在（它属于 dsh-base 的能力，删掉要改 JS patch 层），但 App 不再调用它、也不再接收 `account.*` 通知；路由固定为 `deepseek-official`。
+
+API key 用 Android Keystore 的 AES-GCM 加密，存在 `noBackupFilesDir`；`allowBackup=false`。引擎契约里 `account/*` 部分（[ENGINE-CONTRACT.md](ENGINE-CONTRACT.md) §2.4）仅作引擎能力参考，App 侧不用。
 
 ## 模型服务（第三方模型，core/provider/）
 
-除 DeepSeek（API key / 账号登录，路由 `deepseek-official` / `deepseek-account`，不变）外，可以添加 OpenAI 兼容的服务商。设计取舍：
+除 DeepSeek（API key，路由 `deepseek-official`，不变）外，可以添加 OpenAI 兼容的服务商。设计取舍：
 
 - **引擎**：不重开 `llm-pi-ai`（它会带回数十 MB 厂商 SDK 和约 500 个启动模块），而是挂载 vendored 的 [`@snnh/dsh-llm-service-lite`](https://github.com/snnh/dsh-llm-service-lite) 0.2.1（MIT，为 dsh 0.2.1-rc.2 编写，在 rc.5 上运行；`js/packages/llm-service-lite/` 里原样保存其构建产物 `lib/index.js`，去掉 Web 配置界面）。没有服务商时这一行休眠，不注册任何路由。
 - **协议**：只用 OpenAI Chat Completions（`openai-chat-completions`）。国内外主流厂商都提供这个兼容接口，界面里不让用户选协议。
@@ -155,13 +158,7 @@ dsh-base 自带 DeepSeek 账号 provider（OAuth + PKCE，凭据存在 `DSH_HOME
 - **模型元数据**：不做逐模型的能力矩阵。第三方模型的上下文窗口 / 输出上限按「单模型手动 › 服务商手动 › `/models` 返回值 › 默认 128K / 16K」取值（`max_tokens`，避免厂商默认值过小截断工具调用）、压缩 headroom 16K（借鉴 magpie 的经验：dsh 的压缩阈值 = min(80% 窗口, 窗口 − maxTokens − headroom)，默认 64K headroom 会在 48K 就压缩）。不发推理等级，由适配器按模型家族的默认值处理；模型选择器对第三方模型隐藏推理等级，上下文环按同一有效窗口计，并标明来源（接口返回 / 手动设置 / 默认）。
 - **界面**：设置 → 模型服务：DeepSeek 卡片、第三方服务商列表（开关、编辑、删除）、“添加服务商”（选预设 → 填 key → “获取模型列表”即 `GET {baseURL}/models`，兼作连接测试，也可手动输入模型 ID）、默认模型。输入框的模型菜单按服务商分组。引导页也可以直接进入模型服务。
 - **选择回退**：所选服务商被删除、停用或模型不在列表里时回到 DeepSeek（`resolveChoice`）。第三方路由 `initialize` 失败时引擎改用 DeepSeek 路由启动，对话报出该路由的错误。
-- **联网搜索**：`web_search` 由 DeepSeek 提供，需要 DeepSeek API key（或账号路由下的账号登录）。选用第三方模型且没有 API key 时，patch 层关掉 `tool-web.search`，设置页显示“需要 DeepSeek API Key”；`web_fetch` 不受影响。
-
-## 应用内更新（core/update/）
-
-- 不在 Google Play 上分发，更新走 GitHub Releases：每个版本附带 `update.json`（`tools/make-update-manifest.py` 从 APK 生成，同一份提交为 `update/latest.json`），发布步骤见 [发布流程](RELEASE.md)。
-- `AppUpdater`（单例，`DshApp` 启动时 `start()`）：从 GitHub Release、raw.githubusercontent.com 和 jsDelivr 依次错开请求清单（`firstSuccess`，先到的有效清单生效），自动检查每天最多一次；`ApkDownloader` 断点续传到 `cacheDir/update/`，SHA-256 不符换下一个地址；`ApkCheck` 用 `getPackageArchiveInfo` 核对包名、versionCode 和签名证书（与已安装的 App 比，不只看清单）；最后像 `ShizukuInstaller` 一样用 `PackageInstaller` 会话安装。
-- 界面：`feature/update/UpdateUi.kt` 的提示弹窗挂在 `MainActivity` 上（对话框自带返回处理，不加 BackHandler），设置 → 关于有“检查更新”和“自动检查更新”。
+- **联网搜索**：`web_search` 由 DeepSeek 提供，需要 DeepSeek API key。选用第三方模型且没有 API key 时，patch 层关掉 `tool-web.search`，设置页显示“需要 DeepSeek API Key”；`web_fetch` 不受影响。
 
 ## 存储
 

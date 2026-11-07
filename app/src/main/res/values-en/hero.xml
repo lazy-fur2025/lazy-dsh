@@ -1,0 +1,30 @@
+<resources>
+    <string-array name="hero_greet_morning">
+        <item>Good morning</item>
+        <item>Morning — sleep well?</item>
+        <item>A new day, no rush</item>
+    </string-array>
+    <string-array name="hero_greet_day">
+        <item>Good afternoon</item>
+        <item>Here again</item>
+        <item>What should we get done today?</item>
+    </string-array>
+    <string-array name="hero_greet_evening">
+        <item>Good evening</item>
+        <item>Done for the day?</item>
+        <item>How did today go?</item>
+    </string-array>
+    <string-array name="hero_greet_night">
+        <item>It\'s late</item>
+        <item>Still awake?</item>
+        <item>Don\'t stay up too long</item>
+    </string-array>
+    <string-array name="hero_care">
+        <item>Just say what you need</item>
+        <item>One sentence in, the rest is mine</item>
+        <item>What would you like me to take care of?</item>
+        <item>Have some water — no rush</item>
+        <item>Tell me what you want to finish</item>
+        <item>Rest a little if you\'re tired, I\'m here</item>
+    </string-array>
+</resources>

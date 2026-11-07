@@ -1,0 +1,30 @@
+<resources>
+    <string-array name="hero_greet_morning">
+        <item>Доброе утро</item>
+        <item>Утро. Хорошо спалось?</item>
+        <item>Новый день — без спешки</item>
+    </string-array>
+    <string-array name="hero_greet_day">
+        <item>Добрый день</item>
+        <item>Снова здесь</item>
+        <item>Что сделаем сегодня?</item>
+    </string-array>
+    <string-array name="hero_greet_evening">
+        <item>Добрый вечер</item>
+        <item>Уже освободились?</item>
+        <item>Как прошёл день?</item>
+    </string-array>
+    <string-array name="hero_greet_night">
+        <item>Уже поздно</item>
+        <item>Ещё не спите?</item>
+        <item>Не засиживайтесь допоздна</item>
+    </string-array>
+    <string-array name="hero_care">
+        <item>Просто скажите, что нужно</item>
+        <item>Одна фраза — остальное сделаю я</item>
+        <item>Чем мне заняться для вас?</item>
+        <item>Выпейте воды, спешить некуда</item>
+        <item>Расскажите, что хотите закончить</item>
+        <item>Устали — отдохните, я рядом</item>
+    </string-array>
+</resources>

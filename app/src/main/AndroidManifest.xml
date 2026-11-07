@@ -105,14 +105,6 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Account sign-in completion page (engine loopback) opened in another browser, from the
-                 copied sign-in link, returns here; the in-app sign-in screen intercepts it itself. -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="dsh-android" android:host="account" />
-            </intent-filter>
         </activity>
 
         <!-- 分享到 DSH → 安装为扩展: a plugin package (.tgz / .zip), a SKILL.md, or a link / name / mcpServers
@@ -150,7 +142,7 @@
             android:exported="true"
             android:excludeFromRecents="true"
             android:launchMode="singleInstance"
-            android:taskAffinity="io.github.jackwener.dsh.quick"
+            android:taskAffinity="io.github.lazy.dsh.quick"
             android:theme="@style/Theme.Dsh.Quick"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -168,7 +160,7 @@
                 <data android:mimeType="*/*" />
             </intent-filter>
             <intent-filter>
-                <action android:name="io.github.jackwener.dsh.RUN_TASK" />
+                <action android:name="io.github.lazy.dsh.RUN_TASK" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>

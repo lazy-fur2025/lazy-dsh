@@ -14,13 +14,13 @@ fun shizukuPin(name: String): String =
         ?: error("tools/fetch-shizuku.sh: missing $name pin")
 
 android {
-    namespace = "io.github.jackwener.dsh"
+    namespace = "io.github.lazy.dsh"
     compileSdk {
         version = release(37) { minorApiLevel = 2 }
     }
 
     defaultConfig {
-        applicationId = "io.github.jackwener.dsh"
+        applicationId = "io.github.lazy.dsh"
         minSdk = 29
         targetSdk = 36
         versionCode = 26
@@ -134,6 +134,12 @@ dependencies {
     testImplementation(libs.junit)
     // Back-stack tests: the real nav graph on a TestNavHostController (Robolectric for the Android framework bits).
     testImplementation(libs.robolectric)
+    // Headless Compose screenshots (no device): Roborazzi renders the UI through Robolectric.
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    debugImplementation(libs.compose.ui.test.manifest)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.navigation.testing)
     // Room migration tests on the JVM: the real SQLite engine runs the migration SQL against the exported schemas.

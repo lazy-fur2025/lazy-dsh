@@ -182,7 +182,8 @@ route. The plugin adds:
   `account/sign-out`, `account/tasks/running` and notifications `account.*` (patch 10's `sdkExtensions` service;
   contract §2.4).
 
-The app uses `deepseek-account` only when no API key is set; the engine starts without `DEEPSEEK_API_KEY` so login can run.
+The app no longer exposes this sign-in path (API-key only, §账号登录 in docs/ARCHITECTURE.md); the engine side stays
+intact and simply never gets an `account/*` call.
 
 ## Patches
 

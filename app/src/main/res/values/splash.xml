@@ -1,0 +1,4 @@
+<resources>
+    <!-- 冷启动第一帧 = 片头视频的第一帧角落色, 这样系统启动图 → 动画不会跳色. -->
+    <color name="splash_bg">#FFD1E6C6</color>
+</resources>

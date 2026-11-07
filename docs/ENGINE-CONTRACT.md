@@ -38,10 +38,10 @@ Environment (set with `Os.setenv` before start):
 | `DSH_PLUGIN_REGISTRY`, `DSH_PLUGIN_FALLBACK_REGISTRIES`, `DSH_ANDROID_SAFE_MODE`, `DSH_MCP_*` | plugin download source, safe-mode start, MCP header secrets: [`PLUGINS-CONTRACT.md`](PLUGINS-CONTRACT.md) §1 |
 | `DSH_NATIVE_DIR` | `<nativeLibraryDir>` (native addons ship there as `libdsh_pty.so`, `libdsh_flock.so`) |
 | `DSH_BRIDGE_FD` | fd number of the capability socket (see §3) |
-| `DEEPSEEK_API_KEY` | decrypted key (never logged); **absent** when the user has no API key (account login, or nothing yet) |
+| `DEEPSEEK_API_KEY` | decrypted key (never logged); **absent** when the user has not added one |
 | `DSH_ANDROID_KEY_<ID>` | one per enabled third-party provider with a stored key (`<ID>` = route id upper-cased, non-alphanumerics → `_`); decrypted from Keystore-encrypted storage, never logged, never written to disk in plaintext. Named by the provider's `apiKeyEnv` in the patch layer (§1.1) |
 | `DSH_ANDROID_HDR_<ID>_<HEADER>` | one per secret extra request header of an enabled provider (same mangling over `<route id>_<header name>`); stored and passed like the key. Named by the provider's `headerEnv` (§1.1) |
-| `DSH_ANDROID_PACKAGE` | the app's package name (the sign-in completion page's `intent:` link) |
+| `DSH_ANDROID_PACKAGE` | the app's package name (kept for the engine's account callback page; the app no longer uses it) |
 | `DSH_ANDROID_LOCALE` | e.g. `zh-CN` (system prompt language hint) |
 | `TZ`, `DSH_ANDROID_TZ` | the device's IANA zone (`TimeZone.getDefault().id`, e.g. `Asia/Shanghai`). Node's ICU finds no zone on Android otherwise (UTC). `android-env.cjs` assigns `process.env.TZ` from `DSH_ANDROID_TZ` when the resolved zone differs, which resets ICU; drives the time context (patch 11), budget day rollover and log times. A zone change needs an engine restart. |
 | `NODE_EXTRA_CA_CERTS` | `<filesDir>/certs/android-ca.pem`: `AndroidCAStore` (system minus user-disabled, plus user-installed CAs), re-exported when its digest changes |
@@ -112,9 +112,9 @@ Errors: a third-party turn that fails because the account may not use the model 
 and message `llm-service-lite: model "<id>" is not available to this account: <server text>` (not retried; the app
 says the model is not enabled for the account instead of blaming the key).
 
-Web search (`web_search`, DeepSeek search) needs a DeepSeek credential: `DEEPSEEK_API_KEY`, or the account login while
-the session runs on `deepseek-account`. The app therefore turns the tool off when a third-party model is selected and
-no API key is stored; `web_fetch` stays.
+Web search (`web_search`, DeepSeek search) needs a DeepSeek credential: `DEEPSEEK_API_KEY` (the only DeepSeek credential this
+app has — account login was removed). The app therefore turns the tool off when a third-party model is selected and no
+API key is stored; `web_fetch` stays.
 
 The patch layer and the `DSH_ANDROID_KEY_*` environment are read once per process: when either changes (the app
 compares a fingerprint of the rendered patch + keys) the engine restarts the next time it is idle, like a route change.
@@ -127,16 +127,15 @@ the resumed session re-issues seqs the dead process had already sent, so the app
 an offset past its log (`LogSeqs`), never treating a seq as a cross-generation identity.
 
 - `initialize { cwd: HOME, provider, model, reasoningEffort, approvalRequests: true, capabilities: { userQuestions: true } }` —
-  `provider` is `deepseek-official` when an API key is set, else `deepseek-account` when a DeepSeek account is signed in
-  (dsh's `initializeDefaultModel` precedence: the account route only without a key), else `deepseek-official` (the engine
-  still starts so the user can sign in; the app refuses prompts with "当前模型暂不可用，请登录后再试"). With a third-party model selected
+  `provider` is `deepseek-official` for DeepSeek (this build has no account route: without a key the app refuses prompts
+  with "未设置 API Key" and points at 设置 → 模型). With a third-party model selected
   (设置 → 模型服务), `provider` is that provider's route id (§1.1), `model` its model id, and `reasoningEffort` the level
   the user picked for that model in the composer (saved per route + model), sent only while the engine's last
   `android/models/reasoning` answer lists it for the model; 默认, or a saved level the model no longer offers, omits it
   (the adapter then applies the family's default level, or nothing). dsh refuses any other level
-  (`UNSUPPORTED_REASONING_EFFORT`), which would fail the route. If that route fails `initialize`, the engine is initialized on the DeepSeek route instead (so sign-in still
-  works) and prompts fail with the route's error until the configuration changes. The app reads
-  `account/state`, then `android/models/reasoning` (below), before `initialize`. A route change (provider, model or effort) re-sends `initialize` while no SDK
+  (`UNSUPPORTED_REASONING_EFFORT`), which would fail the route. If that route fails `initialize`, the engine is initialized
+  on the DeepSeek route instead and prompts fail with the route's error until the configuration changes. The app reads
+  `android/models/reasoning` (below), then `initialize`; it no longer asks `account/state`. A route change (provider, model or effort) re-sends `initialize` while no SDK
   session is open in the process (patch-free: the server just replaces its route), otherwise restarts the idle engine.
 - `android/models/reasoning { models: [{ provider, model }] }` → `{ models: [{ provider, model, efforts: [{ id, name }],
   defaultEffort? } | { provider, model, error }] }` (plugin-guard, through patch 10; #46): each third-party model's
@@ -184,6 +183,9 @@ an offset past its log (`LogSeqs`), never treating a seq as a cross-generation i
 
 ### 2.4 Account (DeepSeek login) — `@dsh-android/plugin-account`, patch 10
 
+> The app no longer exposes account sign-in (removed 2026-11, API-key only): the methods, notifications and the
+> `deepseek-account` route below still exist inside the engine but nothing calls them. Kept as the engine contract.
+
 dsh-base already mounts the account provider (`deepseek-account` → `@deepseek-ai/dsh-deepseek-account-platform`: system
 browser OAuth + PKCE S256 against `https://platform.deepseek.com`, grant in `$DSH_HOME`'s credential store, `resolveToken`
 for model / web-search requests to `api.deepseek.com`, profile / balance, 401 → session expired, sign-out with background
@@ -207,17 +209,11 @@ Engine → app notifications: `account.changed { view }` (every state change, in
 refused for lack of a usable login), `account.callback { result: 'ok' | 'failed' | 'cancelled' }` (the browser reached the
 callback).
 
-Browser round trip on Android: `account/sign-in/start` opens a loopback HTTP server on `127.0.0.1:<random port>` (the
-provider's `webServer`), sends `redirect_uri = http://127.0.0.1:<port>/oauth/callback` to Platform's `auth_init` and
-returns; the app shows `authorizeUrl` (+ `theme=light|dark`) in its own sign-in screen, a WebView inside MainActivity
-(feature/account/PlatformWebScreen.kt; no Custom Tab, so OEM browsers cannot turn it into a separate browser task).
-Platform redirects the page to the loopback callback (cleartext allowed for 127.0.0.1 / localhost only, via
-`network_security_config`); the provider validates `state`, exchanges the code with the PKCE verifier and commits the
-grant. Instead of Platform's completion page (or dsh's "close this tab" page), the callback answers with a local page that
-opens `intent://account/login?result=…#Intent;scheme=dsh-android;package=<pkg>;end` (automatically, and from a 返回 DSH
-button); the WebView intercepts that navigation and closes the screen, which also closes when the attempt settles.
-Closing the screen (✕, or Back with no page history) cancels the attempt (`account/sign-in/cancel`). The VIEW filter
-`dsh-android://account` on MainActivity remains for a sign-in link copied into another browser.
+Browser round trip on Android (engine-side description; the app no longer starts it): `account/sign-in/start` opens a
+loopback HTTP server on `127.0.0.1:<random port>` (the provider's `webServer`), sends
+`redirect_uri = http://127.0.0.1:<port>/oauth/callback` to Platform's `auth_init` and returns; the completion page
+opens `intent://account/login?result=…#Intent;scheme=dsh-android;package=<pkg>;end`. The app's former in-app WebView
+screen and the `dsh-android://account` VIEW filter on MainActivity were removed with sign-in (2026-11).
 
 **Session id convention:** attended sessions use a random UUID. Sessions started by automations use `auto_<ruleId>_<uuid>`; the app auto-answers `approval/request` for these (allowed only if the tool is in the rule's whitelist, else `rejected`).
 

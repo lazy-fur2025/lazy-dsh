@@ -2,6 +2,8 @@
 <paths>
     <external-path name="storage" path="." />
     <cache-path name="cache" path="." />
+    <!-- Office exports (core/office/OfficeExport) live in files/exports and are opened via ACTION_VIEW. -->
+    <files-path name="exports" path="exports/" />
     <!-- SD cards / USB storage (/storage/XXXX-XXXX) for share_to_app -->
     <root-path name="volumes" path="storage" />
 </paths>

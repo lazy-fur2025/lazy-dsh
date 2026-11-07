@@ -1,0 +1,4 @@
+<resources>
+    <!-- 深色下不播薄荷色片头 (夜间会闪眼), 直接落到画布色. -->
+    <color name="splash_bg">#FF0B0C10</color>
+</resources>

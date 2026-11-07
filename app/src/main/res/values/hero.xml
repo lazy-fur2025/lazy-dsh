@@ -1,0 +1,30 @@
+<resources>
+    <string-array name="hero_greet_morning">
+        <item>早上好</item>
+        <item>早安，睡得好吗</item>
+        <item>新的一天，慢慢来</item>
+    </string-array>
+    <string-array name="hero_greet_day">
+        <item>下午好</item>
+        <item>又见面了</item>
+        <item>今天想让我帮你做点什么</item>
+    </string-array>
+    <string-array name="hero_greet_evening">
+        <item>晚上好</item>
+        <item>忙完了吗</item>
+        <item>今天过得怎么样</item>
+    </string-array>
+    <string-array name="hero_greet_night">
+        <item>夜深了</item>
+        <item>还没睡吗</item>
+        <item>别熬太晚</item>
+    </string-array>
+    <string-array name="hero_care">
+        <item>有什么想做的，直接说就好</item>
+        <item>一句话交给手机，剩下的我来</item>
+        <item>想让我帮你处理点什么？</item>
+        <item>记得喝口水，不用急</item>
+        <item>先说说你想完成什么</item>
+        <item>累了就歇一会儿，我在这儿</item>
+    </string-array>
+</resources>

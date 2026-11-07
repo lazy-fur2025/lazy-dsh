@@ -33,6 +33,19 @@ Defaults: `WORK=<repo>/../toolchains` (the directory next to the checkout), `OUT
 (default `<repo>/toolchains/out/jniLibs`), so either make `<repo>/toolchains` a symlink to `$WORK` (it is gitignored) or
 pass `-Pdsh.nativeOut=$WORK/out/jniLibs`.
 
+**Package rename:** this checkout uses `io.github.lazy.dsh`, so `libdshengine.so` must export
+`Java_io_github_lazy_dsh_engine_NodeRuntime_nativeStart`. The prebuilt releases above still export the
+old symbol; run `native/build.sh engine` (or publish your own prebuilt tag with the new inputs) instead
+of `native/prebuilt.sh fetch` after a rename.
+
+**Do not binary-patch the symbol name.** Overwriting the string in `.dynstr` looks right in
+`readelf --dyn-syms`, but `.gnu.hash` still holds the old symbol's hash: the bloom filter rejects the
+new name and the app dies with `UnsatisfiedLinkError: No implementation found for
+…NodeRuntime.nativeStart`, which then makes sign-in *and* every model call fail (both need the
+engine). Rebuild with `native/build.sh engine`; if a rebuild is impossible, the bloom word and the
+chain entry for the renamed symbol have to be recomputed (`gnu_hash(name)`, see `tools/`), and the
+old name must stop resolving.
+
 ## Building from source
 
 ```sh
@@ -142,7 +155,7 @@ Skipped Termux patches:
 ## JNI wrapper (`engine-jni/dshengine.cc`)
 
 ```
-JNIEXPORT jint JNICALL Java_io_github_jackwener_dsh_engine_NodeRuntime_nativeStart(
+JNIEXPORT jint JNICALL Java_io_github_lazy_dsh_engine_NodeRuntime_nativeStart(
     JNIEnv*, jclass, jobjectArray args, jint stdinFd, jint stdoutFd, jint stderrFd);
 JNIEXPORT jint JNI_OnLoad(JavaVM*, void*);   // returns JNI_VERSION_1_6
 ```
