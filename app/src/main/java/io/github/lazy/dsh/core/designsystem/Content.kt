@@ -20,10 +20,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -262,18 +266,131 @@ fun Screenshot(file: File, modifier: Modifier = Modifier, maxHeight: Dp = 240.dp
     if (open) Lightbox(file) { open = false }
 }
 
-/** dsh ImageLightbox: black 88 % mask, pinch to zoom, tap to close. */
+/** dsh ImageLightbox: blurred dark stage, pinch to zoom, floating frosted action pill (Save / Share / Reset zoom) & close button. */
 @Composable
 fun Lightbox(file: File, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val savedMsg = stringResource(R.string.sticker_saved)
     Dialog(onDismiss, DialogProperties(usePlatformDefaultWidth = false)) {
         DialogBlurBehind()
         var scale by remember { mutableFloatStateOf(1f) }
         var offset by remember { mutableStateOf(Offset.Zero) }
-        val state = rememberTransformableState { z, p, _ -> scale = (scale * z).coerceIn(1f, 6f); offset += p }
-        Box(Modifier.fillMaxSize().background(Color(0xE0000000)).clickable { onDismiss() }, contentAlignment = Alignment.Center) {
-            AsyncImage(file, null, Modifier.fillMaxSize().transformable(state)
-                .graphicsLayer { scaleX = scale; scaleY = scale; translationX = offset.x; translationY = offset.y }, contentScale = ContentScale.Fit)
-            IconBtn(R.drawable.dsw_close_outline, onDismiss, Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(12.dp), size = 40.dp, iconSize = 20.dp, tint = Color.White, contentDescription = stringResource(R.string.close))
+        val state = rememberTransformableState { z, p, _ ->
+            scale = (scale * z).coerceIn(1f, 6f)
+            offset = if (scale <= 1.02f) Offset.Zero else offset + p
+        }
+        Box(Modifier.fillMaxSize().background(Color(0xE0080A10)).clickable { onDismiss() }, contentAlignment = Alignment.Center) {
+            AsyncImage(
+                file, null,
+                Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 48.dp).transformable(state)
+                    .graphicsLayer { scaleX = scale; scaleY = scale; translationX = offset.x; translationY = offset.y },
+                contentScale = ContentScale.Fit,
+            )
+            // Top-right frosted circular close button
+            Box(
+                Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(16.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(Color(0x991C1E26))
+                    .border(Hairline, Color(0x40FFFFFF), androidx.compose.foundation.shape.CircleShape),
+            ) {
+                IconBtn(
+                    R.drawable.dsw_close_outline, onDismiss,
+                    size = 40.dp, iconSize = 18.dp, tint = Color.White,
+                    shape = androidx.compose.foundation.shape.CircleShape,
+                    contentDescription = stringResource(R.string.close),
+                )
+            }
+            // Bottom frosted glass pill bar: Save to Gallery + Share + optional Reset Zoom
+            Row(
+                Modifier.align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 24.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(Color(0xB8181B24))
+                    .border(Hairline, Color(0x44FFFFFF), androidx.compose.foundation.shape.CircleShape)
+                    .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) {}
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                DButton(
+                    stringResource(R.string.sticker_save),
+                    {
+                        scope.launch(Dispatchers.IO) {
+                            val ok = runCatching {
+                                val mime = if (file.extension.equals("jpg", true) || file.extension.equals("jpeg", true)) "image/jpeg" else "image/png"
+                                val values = android.content.ContentValues().apply {
+                                    put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, "DSH_${System.currentTimeMillis()}.${file.extension.ifBlank { "png" }}")
+                                    put(android.provider.MediaStore.Images.Media.MIME_TYPE, mime)
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                        put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_PICTURES + "/DSH")
+                                        put(android.provider.MediaStore.Images.Media.IS_PENDING, 1)
+                                    }
+                                }
+                                val resolver = context.contentResolver
+                                val uri = resolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return@runCatching false
+                                try {
+                                val stream = resolver.openOutputStream(uri) ?: error("No image output stream")
+                                stream.use { out -> file.inputStream().use { it.copyTo(out) } }
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                    values.clear()
+                                    values.put(android.provider.MediaStore.Images.Media.IS_PENDING, 0)
+                                    resolver.update(uri, values, null, null)
+                                }
+                                true
+                                } catch (e: Exception) {
+                                    runCatching { resolver.delete(uri, null, null) }
+                                    throw e
+                                }
+                            }.getOrDefault(false)
+                            if (ok) withContext(Dispatchers.Main) {
+                                android.widget.Toast.makeText(context, savedMsg, android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
+                    variant = BtnVariant.Ghost,
+                    size = BtnSize.Sm,
+                    icon = R.drawable.dsw_download_outline,
+                )
+                Box(Modifier.width(1.dp).height(14.dp).background(Color(0x33FFFFFF)))
+                DButton(
+                    stringResource(R.string.share),
+                    {
+                        scope.launch(Dispatchers.IO) {
+                            val uri = runCatching {
+                                val target = if (file.canonicalPath.startsWith(context.cacheDir.canonicalPath)) file else {
+                                    val copy = File(File(context.cacheDir, "shares").apply { mkdirs() }, file.name)
+                                    file.copyTo(copy, overwrite = true)
+                                    copy
+                                }
+                                androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.files", target)
+                            }.getOrNull() ?: return@launch
+                            val mime = if (file.extension.equals("jpg", true) || file.extension.equals("jpeg", true)) "image/jpeg" else "image/png"
+                            val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                type = mime
+                                putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            runCatching {
+                                context.startActivity(android.content.Intent.createChooser(send, null).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                            }
+                        }
+                    },
+                    variant = BtnVariant.Ghost,
+                    size = BtnSize.Sm,
+                    icon = R.drawable.dsw_share_outline,
+                )
+                if (scale > 1.05f) {
+                    Box(Modifier.width(1.dp).height(14.dp).background(Color(0x33FFFFFF)))
+                    Text(
+                        "${(scale * 100).toInt()}%",
+                        Modifier.clip(Radius.sm).clickable { scale = 1f; offset = Offset.Zero }.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = DshType.mono11,
+                        color = Color.White,
+                    )
+                }
+            }
         }
     }
 }

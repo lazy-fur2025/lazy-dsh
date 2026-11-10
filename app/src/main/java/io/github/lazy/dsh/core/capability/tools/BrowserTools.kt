@@ -77,6 +77,24 @@ class BrowserTools @Inject constructor(@ApplicationContext private val context: 
     /** Page text plus numbered interactive elements (data-dsh-id). */
     private suspend fun read(maxChars: Int = 8000): String = js(READ_JS).take(maxChars)
 
+    /** Runs [script] in the current page and returns its value (a JSON string is unquoted). */
+    internal suspend fun eval(script: String): String = js(script)
+
+    /** The current page's text, without navigating. */
+    internal suspend fun currentText(): String = js("(document.body ? document.body.innerText : '')")
+
+    /**
+     * Loads [url] in the agent browser and returns the page's text — for endpoints that answer JSON
+     * or plain text (a list API, a feed). The browser's own cookies apply, so a site the user logged
+     * into in this browser stays logged in. The page the agent was on is replaced.
+     */
+    internal suspend fun pageText(url: String, timeoutMs: Long = 25_000): String {
+        val n = newNav()
+        withContext(Dispatchers.Main) { view().loadUrl(url) }
+        awaitLoad(n, timeoutMs)
+        return js("(document.body ? document.body.innerText : '')")
+    }
+
     override val tools = listOf(
         object : Tool("browser_open", ToolGroup.Browser, Risk.read, false,
             "Open a web page in the agent's browser and return its text and numbered interactive elements.", {

@@ -12,6 +12,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -210,12 +211,25 @@ private fun ConversationPane(vm: HomeViewModel, onMenu: () -> Unit, onSettings: 
 /** dsh EmptyHero: centered whale + 探索未至之境 + 预览版 pill, composer below. No suggestion chips. */
 @Composable
 private fun EmptyHero(vm: HomeViewModel, composer: ComposerState, settings: Settings, live: SessionLive, conv: Conversation, onAutomation: () -> Unit, onSettings: (String?) -> Unit) {
-    val c = Dsh.colors
-    Column(Modifier.fillMaxSize().imePadding().navigationBarsPadding().padding(horizontal = 8.dp).padding(bottom = 32.dp),
-        verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        HeroHeading()
-        Spacer(Modifier.height(28.dp))
+    EmptyHeroLayout(Modifier.fillMaxSize().imePadding().navigationBarsPadding()) {
         ComposerSlot(vm, composer, settings, live, conv, hero = true, onAutomation = onAutomation, onManageModes = { onSettings("Modes") })
+    }
+}
+
+/** Keep the complete composer visible when the IME leaves too little room for the welcome art. */
+@Composable
+internal fun EmptyHeroLayout(modifier: Modifier = Modifier, composer: @Composable () -> Unit) {
+    BoxWithConstraints(modifier) {
+        val roomy = maxHeight >= 520.dp
+        Column(Modifier.fillMaxSize().padding(horizontal = 8.dp).padding(bottom = if (roomy) 32.dp else 4.dp),
+            verticalArrangement = if (roomy) Arrangement.Center else Arrangement.Bottom,
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            if (roomy) {
+                HeroHeading()
+                Spacer(Modifier.height(28.dp))
+            }
+            composer()
+        }
     }
 }
 

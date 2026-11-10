@@ -53,6 +53,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.lazy.dsh.R
+import io.github.lazy.dsh.core.data.StickerCatalog
 import io.github.lazy.dsh.core.data.WorkDetails
 import io.github.lazy.dsh.core.designsystem.BtnSize
 import io.github.lazy.dsh.core.designsystem.BtnVariant
@@ -155,6 +156,16 @@ fun ChatStream(
     }
 }
 
+/** An assistant text block: its markdown, then the sticker the model sent with it (if any). */
+@Composable
+private fun ReplyText(text: String) {
+    val (stickers, clean) = remember(text) { StickerCatalog.parse(text) }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (clean.isNotBlank()) SelectionContainer { DshMarkdown(clean) }
+        if (stickers.isNotEmpty()) MessageStickers(stickers, standalone = clean.isBlank())
+    }
+}
+
 @Composable
 private fun TurnView(
     turn: Turn, isLast: Boolean, live: SessionLive, details: WorkDetails,
@@ -180,7 +191,7 @@ private fun TurnView(
         }
         turn.reply?.let { reply ->
             Spacer(Modifier.height(12.dp))
-            SelectionContainer { DshMarkdown(reply.text) }
+            ReplyText(reply.text)
         }
         val end = turn.endReason
         if (turn.status == TurnStatus.Stopped && turn.error == null && !running && end != EndReason.Budget) {
@@ -209,7 +220,7 @@ private fun ProcessBlocks(turnKey: String, blocks: List<Block>, live: Boolean, s
         segments.forEachIndexed { i, seg ->
             val segLive = live && i == segments.lastIndex
             when (val b = seg.first()) {
-                is Block.Text -> Box(Modifier.padding(vertical = 8.dp)) { DshMarkdown(b.text) }
+                is Block.Text -> Box(Modifier.padding(vertical = 8.dp)) { ReplyText(b.text) }
                 is Block.Compaction -> CompactionRow(b)
                 is Block.Notice -> NoticeRow(b)
                 else -> StepGroup("$turnKey/$i", seg, segLive, sessionId, onInspect)
@@ -245,15 +256,24 @@ private fun UserMessage(u: UserMsg, compact: Boolean) {
     val c = Dsh.colors
     val context = LocalContext.current
     val maxW = (LocalConfiguration.current.screenWidthDp * 0.82f).dp
+    val (stickers, cleanText) = remember(u.text) { StickerCatalog.parse(u.text) }
+    val nonStickerImages = u.images
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
-        if (u.images > 0 || u.files > 0) {
+        if (nonStickerImages > 0 || u.files > 0) {
             Row(Modifier.padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (u.images > 0) Tag(stringResource(R.string.images_n, u.images))
+                if (nonStickerImages > 0) Tag(stringResource(R.string.images_n, nonStickerImages))
                 if (u.files > 0) Tag(stringResource(R.string.files_n, u.files))
             }
         }
-        if (u.text.isNotBlank()) SelectionContainer {
-            Text(u.text, Modifier.widthIn(max = maxW).glassBubble().padding(horizontal = 16.dp, vertical = 10.dp),
+        if (stickers.isNotEmpty()) {
+            MessageStickers(
+                stickers = stickers,
+                modifier = Modifier.padding(bottom = if (cleanText.isNotBlank()) 6.dp else 0.dp),
+                standalone = cleanText.isBlank(),
+            )
+        }
+        if (cleanText.isNotBlank()) SelectionContainer {
+            Text(cleanText, Modifier.widthIn(max = maxW).glassBubble().padding(horizontal = 16.dp, vertical = 10.dp),
                 style = DshType.s14, color = c.labelPrimary)
         }
         if (!compact) Row(Modifier.padding(top = 6.dp).height(28.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -268,9 +288,18 @@ private fun UserMessage(u: UserMsg, compact: Boolean) {
 private fun PendingSteer(m: SteerMessage) {
     val c = Dsh.colors
     val maxW = (LocalConfiguration.current.screenWidthDp * 0.82f).dp
+    val (stickers, cleanText) = remember(m.text) { StickerCatalog.parse(m.text) }
+    val nonStickerImages = m.images
     Column(Modifier.fillMaxWidth().padding(bottom = 12.dp).alpha(0.6f), horizontalAlignment = Alignment.End) {
-        if (m.images > 0) Tag(stringResource(R.string.images_n, m.images), modifier = Modifier.padding(bottom = 8.dp))
-        if (m.text.isNotBlank()) Text(m.text, Modifier.widthIn(max = maxW).glassBubble().padding(horizontal = 16.dp, vertical = 10.dp),
+        if (nonStickerImages > 0) Tag(stringResource(R.string.images_n, nonStickerImages), modifier = Modifier.padding(bottom = 8.dp))
+        if (stickers.isNotEmpty()) {
+            MessageStickers(
+                stickers = stickers,
+                modifier = Modifier.padding(bottom = if (cleanText.isNotBlank()) 6.dp else 0.dp),
+                standalone = cleanText.isBlank(),
+            )
+        }
+        if (cleanText.isNotBlank()) Text(cleanText, Modifier.widthIn(max = maxW).glassBubble().padding(horizontal = 16.dp, vertical = 10.dp),
             style = DshType.s14, color = c.labelPrimary)
         Spacer(Modifier.height(6.dp))
         Tag(stringResource(R.string.steer_pending), Tone.Neutral)

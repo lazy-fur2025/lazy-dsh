@@ -21,6 +21,12 @@
     <string name="channel_tasks">Результаты задач</string>
     <string name="channel_attention">Требует твоего участия</string>
     <string name="channel_monitor">Фоновое ожидание</string>
+    <string name="channel_timetable">Напоминания о занятиях</string>
+    <string name="notif_class_title">%2$s через %1$d мин</string>
+    <string name="notif_class_now">%1$s начинается</string>
+    <string name="notif_class_sample">Пример · %1$s</string>
+    <string name="ball_class_lead">%2$s через %1$d мин</string>
+    <string name="ball_class_now">%1$s сейчас</string>
     <string name="notif_approval_title">Ожидает подтверждения</string>
     <string name="notif_approval_text">Агент хочет использовать %1$s</string>
     <string name="notif_question_title">Ожидает ответа</string>
@@ -323,6 +329,7 @@
     <string name="tool_rule_list">Список автоматизаций</string>
     <string name="tool_rule_update">Изменить автоматизацию</string>
     <string name="tool_rule_delete">Удалить автоматизацию</string>
+    <string name="tool_timetable">Расписание</string>
     <string name="tool_schedule">Задача по расписанию</string>
     <string name="tool_skill">Навык</string>
     <string name="tool_load_tools">Загрузить инструменты</string>
@@ -500,6 +507,8 @@
     <string name="grp_browser_desc">Просмотр, нажатия и скриншоты во встроенных веб-страницах</string>
     <string name="grp_rules">Автоматизация</string>
     <string name="grp_rules_desc">Создание автоматизаций и управление ими</string>
+    <string name="grp_timetable">Расписание</string>
+    <string name="grp_timetable_desc">Синхронизация расписания, занятия на сегодня и неделю, экспорт в календарь</string>
     <string name="set_agent_loop">Ограничения запуска</string>
     <string name="session_limit">Лимит token на сессию</string>
     <string name="daily_limit">Дневной лимит token</string>
@@ -832,4 +841,12 @@
     <string name="img_gen_key">API Key</string>
     <string name="img_gen_key_saved">Сохранён: %1$s</string>
     <string name="img_gen_ready">Готово</string>
+    <string name="sticker_title">Стикеры</string>
+    <string name="sticker_gallery_desc">У каждого режима свой набор: ⚡ Электрокот в «Заряде», 🍃 Дух Листвы в «Листе»</string>
+    <string name="sticker_tab_electric">⚡ Электрокот</string>
+    <string name="sticker_tab_leaf">🍃 Дух Листвы</string>
+    <string name="sticker_active_mode">Текущий</string>
+    <string name="sticker_save">Сохранить</string>
+    <string name="sticker_saved">Сохранено в Pictures/DSH</string>
+    <string name="sticker_share">Поделиться</string>
 </resources>

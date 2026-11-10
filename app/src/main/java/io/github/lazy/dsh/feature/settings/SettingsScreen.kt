@@ -278,6 +278,15 @@ private fun GeneralSection(vm: SettingsViewModel) {
         SettingsRow(stringResource(R.string.allow_external_apps), stringResource(R.string.allow_external_apps_desc),
             trailing = { DSwitch(s.allowExternalApps, { vm.setAllowExternalApps(it) }) })
     }
+    // 表情包: the pack the assistant sends is looked up here, never picked by the user in the composer.
+    SettingsGroupTitle(stringResource(R.string.set_more))
+    var stickers by remember { mutableStateOf(false) }
+    SettingsCard {
+        SettingsRow(stringResource(R.string.sticker_title), stringResource(R.string.sticker_gallery_desc), divider = false, onClick = { stickers = true },
+            leading = { DIcon(R.drawable.dsw_smile_outline, size = 18.dp, tint = Dsh.colors.labelSecondary) },
+            trailing = { DIcon(R.drawable.dsw_chevron_right_outline, size = 14.dp, tint = Dsh.colors.labelTertiary) })
+    }
+    if (stickers) io.github.lazy.dsh.feature.conversation.StickerGallerySheet { stickers = false }
 }
 
 @Composable
@@ -440,6 +449,7 @@ internal fun groupLabel(g: ToolGroup) = when (g) {
     ToolGroup.Clipboard -> R.string.grp_clip to R.string.grp_clip_desc
     ToolGroup.Browser -> R.string.grp_browser to R.string.grp_browser_desc
     ToolGroup.Rules -> R.string.grp_rules to R.string.grp_rules_desc
+    ToolGroup.Timetable -> R.string.grp_timetable to R.string.grp_timetable_desc
 }
 
 @Composable

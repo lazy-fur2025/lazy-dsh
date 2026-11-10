@@ -19,9 +19,13 @@ object Notifications {
     const val CHANNEL_TASKS = "tasks"
     const val CHANNEL_ATTENTION = "attention"
     const val CHANNEL_MONITOR = "monitor"
+    /** Class reminders (课表): its own channel so they can be silenced without muting everything else. */
+    const val CHANNEL_TIMETABLE = "timetable"
     const val ID_ENGINE = 1
     const val ID_MONITOR = 2
     const val ID_BALL = 3
+    /** The single class-reminder slot (one class at a time). */
+    const val ID_CLASS = 4
     /** The group summary over several conversations' notifications. */
     const val ID_SESSIONS_SUMMARY = 5
 
@@ -43,6 +47,7 @@ object Notifications {
             NotificationChannel(CHANNEL_TASKS, context.getString(R.string.channel_tasks), NotificationManager.IMPORTANCE_DEFAULT),
             NotificationChannel(CHANNEL_ATTENTION, context.getString(R.string.channel_attention), NotificationManager.IMPORTANCE_HIGH),
             NotificationChannel(CHANNEL_MONITOR, context.getString(R.string.channel_monitor), NotificationManager.IMPORTANCE_MIN),
+            NotificationChannel(CHANNEL_TIMETABLE, context.getString(R.string.channel_timetable), NotificationManager.IMPORTANCE_HIGH),
         ))
     }
 

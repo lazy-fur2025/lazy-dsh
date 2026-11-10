@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -66,6 +67,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
@@ -370,21 +372,30 @@ fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit, mod
 
 // ---- menus ------------------------------------------------------------------------------------
 
-/** dsh Menu: R16 glass surface, 4 dp padding, translucent fill, hairline stroke. */
+/** dsh Menu: R16 glass surface, 6 dp padding, luminous top highlight, soft floating shadow. */
 @Composable
 fun DMenu(
-    expanded: Boolean, onDismiss: () -> Unit, modifier: Modifier = Modifier, offset: DpOffset = DpOffset(0.dp, 4.dp),
+    expanded: Boolean, onDismiss: () -> Unit, modifier: Modifier = Modifier, offset: DpOffset = DpOffset(0.dp, 6.dp),
     /** false keeps focus (and the keyboard) on the text field underneath, e.g. the "/" command menu. */
     focusable: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Dsh.colors
     DropdownMenu(
-        expanded, onDismiss, modifier.widthIn(min = 200.dp).padding(horizontal = 4.dp), offset = offset,
+        expanded, onDismiss, modifier.widthIn(min = 212.dp, max = 340.dp).padding(horizontal = 6.dp), offset = offset,
         properties = androidx.compose.ui.window.PopupProperties(focusable = focusable),
-        shape = Radius.lg, containerColor = if (c.isDark) Color(0xF02B2C33) else Color(0xF7FFFFFF),
-        tonalElevation = 0.dp, shadowElevation = 12.dp,
-        border = androidx.compose.foundation.BorderStroke(Hairline, if (c.isDark) c.glassStrokeTop else c.borderL3), content = content,
+        shape = Radius.lg, containerColor = if (c.isDark) Color(0xF2252730) else Color(0xFAFFFFFF),
+        tonalElevation = 0.dp, shadowElevation = 18.dp,
+        border = androidx.compose.foundation.BorderStroke(
+            Hairline,
+            Brush.verticalGradient(
+                listOf(
+                    if (c.isDark) c.glassStrokeTop else Color.White,
+                    if (c.isDark) c.borderL2 else c.borderL3,
+                ),
+            ),
+        ),
+        content = content,
     )
 }
 
@@ -400,31 +411,56 @@ fun MenuItem(
     trailing: (@Composable () -> Unit)? = null,
 ) {
     val c = Dsh.colors
-    val fg = if (danger) c.error else c.labelPrimary
+    val fg = when {
+        danger -> c.error
+        selected -> c.business
+        else -> c.labelPrimary
+    }
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 40.dp).alpha(if (enabled) 1f else 0.4f).pressable(onClick, Radius.md, enabled).padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
+        Modifier.fillMaxWidth().heightIn(min = 40.dp).alpha(if (enabled) 1f else 0.4f)
+            .clip(Radius.md)
+            .then(if (selected) Modifier.background(c.businessTertiary.copy(alpha = if (c.isDark) 0.55f else 0.7f)) else Modifier)
+            .pressable(onClick, Radius.md, enabled)
+            .padding(horizontal = 10.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        if (icon != null) DIcon(icon, size = 16.dp, tint = if (danger) c.error else c.menuIcon)
+        if (icon != null) {
+            Box(
+                Modifier.size(24.dp).clip(Radius.sm).background(
+                    when {
+                        danger -> c.hoverDanger
+                        selected -> c.businessTertiary
+                        else -> c.selector.copy(alpha = 0.65f)
+                    },
+                ),
+                contentAlignment = Alignment.Center,
+            ) {
+                DIcon(icon, size = 14.dp, tint = when {
+                    danger -> c.error
+                    selected -> c.business
+                    else -> c.menuIcon
+                })
+            }
+        }
         Column(Modifier.weight(1f)) {
-            Text(text, style = DshType.xs13, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(text, style = if (selected) DshType.xs13m else DshType.xs13, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (description != null) Text(description, style = DshType.xxs12, color = c.labelCaption, maxLines = 2)
         }
         trailing?.invoke()
-        if (selected) DIcon(R.drawable.dsw_check_outline, size = 14.dp, tint = c.labelPrimary)
+        if (selected) DIcon(R.drawable.dsw_check_outline, size = 14.dp, tint = c.business)
     }
 }
 
 @Composable
 fun MenuSectionTitle(text: String) =
-    Text(text, Modifier.padding(start = 8.dp, top = 8.dp, bottom = 2.dp), style = DshType.xxxs11m, color = Dsh.colors.labelTertiary)
+    Text(text, Modifier.padding(start = 10.dp, top = 8.dp, bottom = 3.dp), style = DshType.xxxs11m, color = Dsh.colors.labelTertiary)
 
 @Composable
-fun MenuDivider() = Box(Modifier.padding(vertical = 4.dp, horizontal = 8.dp).fillMaxWidth().height(Hairline).background(Dsh.colors.borderL2))
+fun MenuDivider() = GlassDivider(Modifier.padding(vertical = 5.dp, horizontal = 8.dp))
 
-// ---- dialogs ----------------------------------------------------------------------------------
+// ---- dialogs & bottom sheets ------------------------------------------------------------------
 
-/** dsh Modal: glass panel, prominent elevation, 24 dp padding, 20 dp gap. */
+/** dsh Modal: frosted glass panel with subtle entrance spring, luminous edge rim, and soft aura header. */
 @Composable
 fun DDialog(
     onDismiss: () -> Unit,
@@ -433,19 +469,60 @@ fun DDialog(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Dsh.colors
+    val reduced = LocalReducedMotion.current
+    var entered by remember { mutableStateOf(reduced) }
+    val scale by animateFloatAsState(
+        if (entered) 1f else 0.94f,
+        if (reduced) tween(0) else androidx.compose.animation.core.spring(dampingRatio = 0.82f, stiffness = 520f),
+        label = "dialogScale",
+    )
+    val alpha by animateFloatAsState(
+        if (entered) 1f else 0f,
+        tween(if (reduced) 0 else 180, easing = Motion.enter),
+        label = "dialogAlpha",
+    )
+    androidx.compose.runtime.LaunchedEffect(Unit) { entered = true }
     Dialog(onDismiss, DialogProperties(usePlatformDefaultWidth = false)) {
         // The page under the dialog stays sharp otherwise; blur it so the dialog reads.
         DialogBlurBehind()
         Column(
-            Modifier.padding(24.dp).widthIn(max = 420.dp).fillMaxWidth().frost(Radius.panel, GlassTier.Thick, elevation = 24.dp)
+            Modifier.padding(24.dp)
+                .widthIn(max = 420.dp)
+                .fillMaxWidth()
+                .graphicsLayer { scaleX = scale; scaleY = scale; this.alpha = alpha }
+                .frost(Radius.panel, GlassTier.Thick, elevation = 28.dp)
                 // Readability first: without a canvas scrim the page's text shows through the panel.
-                .background(c.canvas.copy(alpha = if (c.isDark) 0.9f else 0.82f))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            c.brandGradStart.copy(alpha = if (c.isDark) 0.08f else 0.05f),
+                            Color.Transparent,
+                        ),
+                    ),
+                )
+                .background(c.canvas.copy(alpha = 1f))
+                .border(
+                    0.75.dp,
+                    Brush.verticalGradient(
+                        listOf(
+                            c.brandGradStart.copy(alpha = if (c.isDark) 0.45f else 0.32f),
+                            c.glassStrokeTop,
+                            c.glassStrokeBottom,
+                        ),
+                    ),
+                    Radius.panel,
+                )
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(title, style = DshType.l20, color = c.labelPrimary)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(4.dp, 18.dp).clip(CircleShape).background(Brush.verticalGradient(listOf(c.brandGradStart, c.brandGradEnd))))
+                Spacer(Modifier.width(10.dp))
+                Text(title, Modifier.weight(1f), style = DshType.l20, color = c.labelPrimary)
+            }
+            GlassDivider()
             CompositionLocalProvider(LocalContentColor provides c.labelSecondary) { content() }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), content = buttons)
+            Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), content = buttons)
         }
     }
 }
@@ -453,18 +530,74 @@ fun DDialog(
 /** dsh RiskConfirmation: the confirm button stays disabled until the risk checkbox is ticked. */
 @Composable
 fun RiskConfirmDialog(title: String, body: String, check: String, confirm: String, cancel: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val c = Dsh.colors
     var ok by remember { mutableStateOf(false) }
     // Taps already in flight when the dialog pops up (e.g. a double tap on the menu) must not tick or confirm it.
     val shownAt = remember { android.os.SystemClock.uptimeMillis() }
     val settled = { android.os.SystemClock.uptimeMillis() - shownAt >= 500 }
     DDialog(onDismiss, title, buttons = {
         DButton(cancel, onDismiss, variant = BtnVariant.Outline)
-        DButton(confirm, { if (ok && settled()) onConfirm() }, enabled = ok)
+        DButton(confirm, { if (ok && settled()) onConfirm() }, variant = if (ok) BtnVariant.Danger else BtnVariant.Primary, enabled = ok)
     }) {
-        Text(body, style = DshType.s14, color = Dsh.colors.labelSecondary)
-        Row(Modifier.toggleable(ok, role = Role.Checkbox) { if (settled()) ok = it }.heightIn(min = 40.dp).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            Modifier.fillMaxWidth().clip(Radius.md).background(c.warnTertiary).border(Hairline, c.warnSecondary, Radius.md).padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Box(Modifier.padding(top = 5.dp).size(7.dp).clip(CircleShape).background(c.warn))
+            Text(body, style = DshType.s14, color = c.labelPrimary)
+        }
+        Row(
+            Modifier.fillMaxWidth().clip(Radius.md).background(if (ok) c.hover else c.bgModule.copy(alpha = 0.6f))
+                .border(Hairline, if (ok) c.brandPrimary.copy(alpha = 0.5f) else c.borderL2, Radius.md)
+                .toggleable(ok, role = Role.Checkbox) { if (settled()) ok = it }
+                .heightIn(min = 44.dp).padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             DCheckbox(ok, null)
-            Text(check, style = DshType.s14, color = Dsh.colors.labelPrimary)
+            Text(check, style = DshType.s14, color = c.labelPrimary)
+        }
+    }
+}
+
+/** Shared frosted glass bottom sheet (`DSheet`) with blurred backdrop, top pill handle, and luminous top border. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun DSheet(
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    maxHeightFraction: Float = 0.86f,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val c = Dsh.colors
+    val sheet = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val shape = Radius.panel.copy(
+        bottomStart = androidx.compose.foundation.shape.CornerSize(0.dp),
+        bottomEnd = androidx.compose.foundation.shape.CornerSize(0.dp),
+    )
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheet,
+        containerColor = Color.Transparent,
+        scrimColor = Color(0x78000000),
+        tonalElevation = 0.dp,
+        shape = shape,
+        dragHandle = null,
+    ) {
+        DialogBlurBehind()
+        val maxH = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * maxHeightFraction).dp
+        Column(
+            modifier.fillMaxWidth()
+                .heightIn(max = maxH)
+                .frost(shape, GlassTier.Thick, elevation = 24.dp)
+                .background(c.canvas.copy(alpha = 1f))
+                .navigationBarsPadding(),
+        ) {
+            Box(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 6.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(36.dp, 4.dp).clip(CircleShape).background(c.borderL3))
+            }
+            content()
         }
     }
 }

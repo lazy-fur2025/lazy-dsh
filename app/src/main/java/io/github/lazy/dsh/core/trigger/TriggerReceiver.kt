@@ -55,12 +55,16 @@ class TriggerReceiver : BroadcastReceiver() {
 @AndroidEntryPoint
 class BootReceiver : BroadcastReceiver() {
     @Inject lateinit var hub: TriggerHub
+    @Inject lateinit var reminders: io.github.lazy.dsh.core.timetable.TimetableReminders
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action !in ACTIONS) return
         val pending = goAsync()
         CoroutineScope(Dispatchers.Default).launch {
-            try { runCatching { hub.sync() }.onFailure { android.util.Log.e("BootReceiver", "sync failed", it) } } finally { pending.finish() }
+            try {
+                runCatching { hub.sync() }.onFailure { android.util.Log.e("BootReceiver", "sync failed", it) }
+                runCatching { reminders.resync() }.onFailure { android.util.Log.e("BootReceiver", "timetable resync failed", it) }
+            } finally { pending.finish() }
         }
     }
 

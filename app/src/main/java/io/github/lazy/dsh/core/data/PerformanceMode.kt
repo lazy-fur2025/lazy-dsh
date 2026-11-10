@@ -53,7 +53,8 @@ enum class PerformanceMode(val id: String) {
 
     /** [mode] as the engine should see it under this mode: the extra instruction, and skills in 叶绿 off. */
     fun applyTo(mode: SessionMode): SessionMode = mode.copy(
-        prompt = listOf(mode.prompt.trim(), prompt).filter { it.isNotEmpty() }.joinToString("\n\n"),
+        prompt = listOf(mode.prompt.trim(), prompt, StickerCatalog.prompt(this))
+            .filter { it.isNotEmpty() }.joinToString("\n\n"),
         skills = mode.skills && skills,
     )
 

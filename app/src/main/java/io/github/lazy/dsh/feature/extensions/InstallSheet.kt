@@ -53,19 +53,14 @@ import io.github.lazy.dsh.core.extensions.UserError
  * provenance, size, the built-in settings it changes, the honest trust notice) → progress → result.
  * There is no other dialog: an incompatible version offers 仍要安装 as a link on the same card.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InstallSheet(vm: ExtensionsViewModel, onOpenMcp: () -> Unit) {
     val state by vm.install.state.collectAsStateWithLifecycle()
     if (state == InstallFlow.State.Idle) return
     val c = Dsh.colors
-    val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet({ if (state is InstallFlow.State.Installing) vm.install.cancel() else vm.install.dismiss() }, sheetState = sheet, containerColor = c.bgLayer2,
-        shape = Radius.panel.copy(bottomStart = androidx.compose.foundation.shape.CornerSize(0.dp), bottomEnd = androidx.compose.foundation.shape.CornerSize(0.dp)),
-        scrimColor = c.scrim, tonalElevation = 0.dp) {
-        DialogBlurBehind()
-        Column(Modifier.fillMaxWidth().heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.85f).dp).verticalScroll(rememberScrollState())
-            .navigationBarsPadding().padding(horizontal = 20.dp).padding(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    io.github.lazy.dsh.core.designsystem.DSheet({ if (state is InstallFlow.State.Installing) vm.install.cancel() else vm.install.dismiss() }) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp).padding(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             when (val s = state) {
                 is InstallFlow.State.Inspecting -> Row(verticalAlignment = Alignment.CenterVertically) {
                     Spinner(16.dp); Spacer(Modifier.width(10.dp))

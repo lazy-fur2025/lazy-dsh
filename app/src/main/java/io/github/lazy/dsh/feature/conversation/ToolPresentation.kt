@@ -87,6 +87,9 @@ object ToolPresentation {
         "media_control" -> ToolInfo(R.drawable.dsw_play_outline, R.string.tool_media, Activity.Media, BodyKind.Gesture)
         "image_generate" -> ToolInfo(R.drawable.dsw_sparkle, R.string.tool_image_generate, Activity.Image, BodyKind.Image)
         "rule_create", "rule_list", "rule_update", "rule_delete" -> ToolInfo(R.drawable.dsw_clock_outline, titleOf(name), Activity.Rules, BodyKind.InOut)
+        "timetable_login" -> ToolInfo(R.drawable.dsw_globe_outline, titleOf(name), Activity.Browser, BodyKind.Image)
+        "timetable_sync", "timetable_import", "timetable_today", "timetable_week", "timetable_next", "timetable_season", "timetable_export", "timetable_remind" ->
+            ToolInfo(R.drawable.dsw_clock_outline, titleOf(name), Activity.Other, BodyKind.Text)
         "hand_to_user" -> ToolInfo(R.drawable.dsw_user_outline, R.string.tool_hand_to_user, Activity.Other, BodyKind.Text)
         "schedule_create", "schedule_update", "schedule_delete", "schedule_list" -> ToolInfo(R.drawable.dsw_clock_outline, R.string.tool_schedule, Activity.Rules, BodyKind.InOut)
         "skill" -> ToolInfo(R.drawable.dsw_skill_outline, R.string.tool_skill, Activity.Other, BodyKind.InOut)
@@ -143,6 +146,8 @@ object ToolPresentation {
         "rule_list" -> R.string.tool_rule_list
         "rule_update" -> R.string.tool_rule_update
         "rule_delete" -> R.string.tool_rule_delete
+        "timetable_login", "timetable_sync", "timetable_import", "timetable_today", "timetable_week",
+        "timetable_next", "timetable_season", "timetable_export", "timetable_remind" -> R.string.tool_timetable
         else -> R.string.tool_generic
     }
 

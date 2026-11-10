@@ -21,6 +21,12 @@
     <string name="channel_tasks">任务结果</string>
     <string name="channel_attention">需要你处理</string>
     <string name="channel_monitor">后台监听</string>
+    <string name="channel_timetable">上课提醒</string>
+    <string name="notif_class_title">%1$d 分钟后上课 · %2$s</string>
+    <string name="notif_class_now">现在上课 · %1$s</string>
+    <string name="notif_class_sample">示例 · %1$s</string>
+    <string name="ball_class_lead">%1$d 分钟后 · %2$s</string>
+    <string name="ball_class_now">现在上课 · %1$s</string>
     <string name="notif_approval_title">等待审批</string>
     <string name="notif_approval_text">智能体想使用 %1$s</string>
     <string name="notif_question_title">等待回答</string>
@@ -326,6 +332,7 @@
     <string name="tool_rule_list">自动化列表</string>
     <string name="tool_rule_update">修改自动化</string>
     <string name="tool_rule_delete">删除自动化</string>
+    <string name="tool_timetable">课表</string>
     <string name="tool_schedule">定时任务</string>
     <string name="tool_skill">技能</string>
     <string name="tool_load_tools">加载工具</string>
@@ -488,6 +495,8 @@
     <string name="grp_browser_desc">在内置网页中浏览、点击、截图</string>
     <string name="grp_rules">自动化</string>
     <string name="grp_rules_desc">创建和管理自动化任务</string>
+    <string name="grp_timetable">课表</string>
+    <string name="grp_timetable_desc">从教务系统同步课表，查看今天/本周的课，导出日历</string>
     <string name="set_agent_loop">运行限制</string>
     <string name="session_limit">单个会话 token 上限</string>
     <string name="daily_limit">每日 token 上限</string>
@@ -851,4 +860,12 @@
     <string name="img_gen_key">API Key</string>
     <string name="img_gen_key_saved">已保存：%1$s</string>
     <string name="img_gen_ready">已配置</string>
+    <string name="sticker_title">表情包</string>
+    <string name="sticker_gallery_desc">两套表情各归其模式：电荷用 ⚡ 电荷猫，叶绿用 🍃 叶绿精灵</string>
+    <string name="sticker_tab_electric">⚡ 电荷猫</string>
+    <string name="sticker_tab_leaf">🍃 叶绿精灵</string>
+    <string name="sticker_active_mode">当前模式</string>
+    <string name="sticker_save">保存到相册</string>
+    <string name="sticker_saved">已保存到相册 Pictures/DSH</string>
+    <string name="sticker_share">分享</string>
 </resources>

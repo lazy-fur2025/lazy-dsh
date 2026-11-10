@@ -14,6 +14,7 @@ import io.github.lazy.dsh.core.capability.tools.NotificationTools
 import io.github.lazy.dsh.core.capability.tools.RuleTools
 import io.github.lazy.dsh.core.capability.tools.ScreenTools
 import io.github.lazy.dsh.core.capability.tools.SystemTools
+import io.github.lazy.dsh.core.capability.tools.TimetableTools
 import io.github.lazy.dsh.core.engine.RpcJson
 import kotlinx.serialization.json.JsonArray
 import org.junit.Assert.assertTrue
@@ -55,7 +56,7 @@ class CapabilityListTest {
     private fun listed(): List<ToolDescriptor> = listOf(
         FileTools::class.java, AppTools::class.java, ScreenTools::class.java, SystemTools::class.java, NotificationTools::class.java,
         CommsTools::class.java, MediaTools::class.java, ClipboardTools::class.java, BrowserTools::class.java, RuleTools::class.java,
-        KnowledgeTools::class.java,
+        KnowledgeTools::class.java, TimetableTools::class.java,
     ).flatMap { build(it).tools }.map { CapabilityHub.listed(it) }
 
     @Test fun `descriptors stay within the token budget`() {
@@ -73,7 +74,11 @@ class CapabilityListTest {
     companion object {
         /** rule_create (the RuleSpec reference) is the largest at ~2.1k characters. */
         const val PER_TOOL = 2_200
-        /** All ~67 tools, as JSON (descriptions are most of it): ~40k characters ≈ 11k tokens. */
-        const val TOTAL = 42_000
+        /**
+         * All ~74 tools, as JSON (descriptions are most of it): ~44k characters ≈ 11-12k tokens,
+         * about 600 per tool. Bumped twice while the timetable group (7 tools) was written; keep the
+         * per-tool average here rather than letting the total drift.
+         */
+        const val TOTAL = 44_500
     }
 }

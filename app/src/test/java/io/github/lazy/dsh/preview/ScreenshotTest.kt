@@ -313,13 +313,10 @@ class ScreenshotTest {
                         }
                     }
                     if (empty) {
-                        Column(
-                            Modifier.weight(1f).fillMaxWidth().padding(horizontal = 8.dp).padding(bottom = 32.dp),
-                            verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally,
+                        io.github.lazy.dsh.feature.conversation.EmptyHeroLayout(
+                            Modifier.weight(1f).fillMaxWidth().imePadding().navigationBarsPadding(),
                         ) {
-                            io.github.lazy.dsh.feature.conversation.HeroHeading(animate = false)
-                            Spacer(Modifier.height(28.dp))
-                            Box(Modifier.imePadding().navigationBarsPadding()) { ComposerPreview(settings, hero = true, brand = brand) }
+                            ComposerPreview(settings, hero = true, brand = brand)
                         }
                     } else {
                         ChatStream(

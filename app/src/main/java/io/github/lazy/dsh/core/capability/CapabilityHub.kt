@@ -17,6 +17,7 @@ import io.github.lazy.dsh.core.capability.tools.NotificationTools
 import io.github.lazy.dsh.core.capability.tools.RuleTools
 import io.github.lazy.dsh.core.capability.tools.ScreenTools
 import io.github.lazy.dsh.core.capability.tools.SystemTools
+import io.github.lazy.dsh.core.capability.tools.TimetableTools
 import io.github.lazy.dsh.core.data.RuleDao
 import io.github.lazy.dsh.core.data.SettingsRepository
 import io.github.lazy.dsh.core.engine.JsonRpcException
@@ -76,7 +77,7 @@ class CapabilityHub @Inject constructor(
     private val sessions: Lazy<SessionStore>,
     files: FileTools, apps: AppTools, screen: ScreenTools, system: SystemTools, notifications: NotificationTools,
     comms: CommsTools, media: MediaTools, clipboard: ClipboardTools, browser: BrowserTools, ruleTools: RuleTools,
-    knowledge: KnowledgeTools, image: ImageTools,
+    knowledge: KnowledgeTools, image: ImageTools, timetable: TimetableTools,
     private val shellGate: ShellGate,
     private val guard: ActionGuard,
     private val agentScreen: AgentScreen,
@@ -84,7 +85,7 @@ class CapabilityHub @Inject constructor(
     private val experience: AppExperience,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    val allTools: Map<String, Tool> = listOf(files, apps, screen, system, notifications, comms, media, clipboard, browser, ruleTools, knowledge, image)
+    val allTools: Map<String, Tool> = listOf(files, apps, screen, system, notifications, comms, media, clipboard, browser, ruleTools, knowledge, image, timetable)
         .flatMap { it.tools }.associateBy { it.name }
     @Volatile private var bridge: JsonRpcPeer? = null
     private val liveSeq = java.util.concurrent.atomic.AtomicLong()

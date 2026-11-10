@@ -23,6 +23,7 @@ class DshApp : Application() {
     @Inject lateinit var settings: dagger.Lazy<SettingsRepository>
     @Inject lateinit var secrets: dagger.Lazy<io.github.lazy.dsh.core.data.SecretStore>
     @Inject lateinit var agentScreen: dagger.Lazy<AgentScreen>
+    @Inject lateinit var timetableReminders: dagger.Lazy<io.github.lazy.dsh.core.timetable.TimetableReminders>
 
     override fun onCreate() {
         super.onCreate()
@@ -40,6 +41,8 @@ class DshApp : Application() {
             // Import :engine crash records (ApplicationExitInfo / tombstones) from earlier runs.
             runCatching { io.github.lazy.dsh.core.engine.EngineDiagnostics.collectExitInfo(this@DshApp) }
             runCatching { triggers.get().sync() }.onFailure { android.util.Log.e("DshApp", "automation sync failed", it) }
+            // Force-stop and updates clear pending alarms: re-arm the class reminder chain.
+            runCatching { timetableReminders.get().resync() }.onFailure { android.util.Log.e("DshApp", "timetable resync failed", it) }
             if (settings.get().current().floatingBall) runCatching { FloatingBallService.setEnabled(this@DshApp, true) }
             runCatching { agentScreen.get().restoreLeftoverMutes() }
         }

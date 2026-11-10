@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -52,6 +54,7 @@ import io.github.lazy.dsh.core.designsystem.IconBtn
 import io.github.lazy.dsh.core.designsystem.Radius
 import io.github.lazy.dsh.core.designsystem.Whale
 import io.github.lazy.dsh.core.designsystem.elevated
+import io.github.lazy.dsh.core.designsystem.frost
 import io.github.lazy.dsh.core.designsystem.pressable
 import io.github.lazy.dsh.core.session.RowStatus
 import io.github.lazy.dsh.core.session.SessionStore
@@ -117,10 +120,25 @@ class QuickActivity : ComponentActivity() {
                     .statusBarsPadding(), contentAlignment = Alignment.BottomCenter) {
                     Column(
                         Modifier.fillMaxWidth().imePadding().navigationBarsPadding().padding(8.dp)
-                            .elevated(Radius.panel, c.borderL2, 12.dp).clip(Radius.panel).background(c.bgBase)
+                            .frost(Radius.panel, io.github.lazy.dsh.core.designsystem.GlassTier.Thick, elevation = 24.dp)
+                            .background(c.canvas.copy(alpha = if (c.isDark) 0.88f else 0.85f))
+                            .border(
+                                0.75.dp,
+                                androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    listOf(
+                                        c.brandGradStart.copy(alpha = if (c.isDark) 0.45f else 0.30f),
+                                        c.glassStrokeTop,
+                                        c.glassStrokeBottom,
+                                    ),
+                                ),
+                                Radius.panel,
+                            )
                             .clickable(remember { MutableInteractionSource() }, null) {}.padding(bottom = 8.dp),
                     ) {
-                        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 6.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
+                            Box(Modifier.size(32.dp, 3.5.dp).clip(androidx.compose.foundation.shape.CircleShape).background(c.borderL3))
+                        }
+                        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 6.dp, top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                             Whale(width = 20.dp)
                             Spacer(Modifier.width(8.dp))
                             Text(live.title.ifBlank { stringResource(R.string.app_name) }, Modifier.weight(1f), style = DshType.s14m, color = c.labelPrimary,

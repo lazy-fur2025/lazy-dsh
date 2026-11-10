@@ -310,7 +310,8 @@ fun Composer(
                 state.text = v
                 if (v == "/") slashOpen = true else if (slashOpen && !v.startsWith("/")) slashOpen = false
             },
-            Modifier.fillMaxWidth().heightIn(min = if (hero) 52.dp else 36.dp, max = 216.dp).padding(start = 14.dp, end = 8.dp, top = 4.dp)
+            // Measure the toolbar first: a multiline draft must scroll rather than push Send below the IME.
+            Modifier.weight(1f, fill = false).fillMaxWidth().heightIn(min = if (hero) 52.dp else 36.dp, max = 216.dp).padding(start = 14.dp, end = 8.dp, top = 4.dp)
                 .onFocusChanged { fieldFocused = it.isFocused }.focusRequester(focus),
             textStyle = DshType.base16.copy(color = c.labelPrimary),
             cursorBrush = SolidColor(c.business),

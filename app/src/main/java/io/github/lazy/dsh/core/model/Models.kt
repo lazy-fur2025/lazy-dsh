@@ -7,7 +7,8 @@ enum class Risk { read, write, sensitive, dangerous }
 
 enum class ToolGroup(val id: String) {
     Files("files"), Apps("apps"), Screen("screen"), System("system"), Notifications("notifications"),
-    Comms("comms"), Media("media"), Clipboard("clipboard"), Browser("browser"), Rules("rules");
+    Comms("comms"), Media("media"), Clipboard("clipboard"), Browser("browser"), Rules("rules"),
+    Timetable("timetable");
 
     companion object { fun of(id: String) = entries.firstOrNull { it.id == id } }
 }

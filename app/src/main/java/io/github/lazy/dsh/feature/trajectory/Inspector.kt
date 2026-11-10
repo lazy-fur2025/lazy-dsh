@@ -54,8 +54,7 @@ import io.github.lazy.dsh.feature.conversation.prettyJson
 
 private enum class Tab(val label: Int) { Input(R.string.tab_input), Output(R.string.tab_output), Timing(R.string.tab_timing), Images(R.string.tab_images) }
 
-/** Record inspector (dsh trajectory cell detail) as a bottom sheet: 输入 / 输出 / 耗时 / 图片. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Record inspector (dsh trajectory cell detail) as a frosted glass bottom sheet: 输入 / 输出 / 耗时 / 图片. */
 @Composable
 fun Inspector(r: TrajRecord, sessionId: String, onDismiss: () -> Unit) {
     val c = Dsh.colors
@@ -63,19 +62,17 @@ fun Inspector(r: TrajRecord, sessionId: String, onDismiss: () -> Unit) {
     val shots = remember(r.id) { r.callId?.let { ShotStore.files(context, sessionId, it) } ?: emptyList() }
     val tabs = remember(shots) { Tab.entries.filter { it != Tab.Images || shots.isNotEmpty() } }
     var tab by remember(r.id) { mutableIntStateOf(if (r.kind == RecordKind.Tool || r.kind == RecordKind.Subtool) 0 else 1) }
-    val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(onDismiss, sheetState = sheet, containerColor = c.bgLayer2, shape = Radius.panel.copy(bottomStart = androidx.compose.foundation.shape.CornerSize(0.dp), bottomEnd = androidx.compose.foundation.shape.CornerSize(0.dp)),
-        scrimColor = c.scrim, tonalElevation = 0.dp) {
-        DialogBlurBehind()
-        Column(Modifier.fillMaxWidth().heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.85f).dp).navigationBarsPadding().padding(horizontal = 16.dp)) {
+    io.github.lazy.dsh.core.designsystem.DSheet(onDismiss) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Tag(stringResource(kindLabel(r.kind)), if (r.status == RecordStatus.Failed) Tone.Error else Tone.Neutral)
+                Tag(stringResource(kindLabel(r.kind)), if (r.status == RecordStatus.Failed) Tone.Error else Tone.Info)
                 Spacer(Modifier.width(8.dp))
                 Text(when (r.kind) {
                     RecordKind.Tool, RecordKind.Subtool -> stringResource(ToolPresentation.info(r.toolName ?: "").title) + " · " + (r.toolName ?: "")
                     else -> r.title.lineSequence().firstOrNull() ?: ""
                 }, Modifier.weight(1f), style = DshType.s14m, color = c.labelPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 IconBtn(R.drawable.dsw_copy_outline, { copyText(context, prettyJson((r.resultRaw ?: r.raw).toString())) }, contentDescription = stringResource(R.string.copy_json))
+                IconBtn(R.drawable.dsw_close_outline, onDismiss, contentDescription = stringResource(R.string.close))
             }
             Spacer(Modifier.padding(4.dp))
             Segmented(tabs.map { stringResource(it.label) }, tab.coerceAtMost(tabs.lastIndex), { tab = it })

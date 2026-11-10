@@ -53,6 +53,8 @@ import io.github.lazy.dsh.core.designsystem.Spinner
 import io.github.lazy.dsh.core.designsystem.Tag
 import io.github.lazy.dsh.core.designsystem.Tone
 import io.github.lazy.dsh.core.designsystem.elevated
+import io.github.lazy.dsh.core.designsystem.frost
+import io.github.lazy.dsh.core.designsystem.GlassTier
 import io.github.lazy.dsh.core.designsystem.pressable
 import io.github.lazy.dsh.core.model.Risk
 import io.github.lazy.dsh.core.session.ApprovalOutcome
@@ -72,16 +74,38 @@ import io.github.lazy.dsh.feature.settings.rememberShellGuideFlow
 import io.github.lazy.dsh.feature.settings.rememberShellState
 import io.github.lazy.dsh.feature.settings.isZh
 
-/** The approval-style card frame: warn border, warn strip, scrolling body, right-aligned actions. */
+/** The approval-style card frame: frosted glass surface, luminous warn accent border & banner, scrolling body, right-aligned actions. */
 @Composable
 private fun AttentionCard(strip: String, answered: Boolean, body: @Composable ColumnScope.() -> Unit, actions: @Composable () -> Unit) {
     val c = Dsh.colors
     val settled = rememberSettled(400)
-    Column(Modifier.fillMaxWidth().ignoreTapsUntil(settled).elevated(Radius.xl, c.warnSecondary, 6.dp).border(1.dp, c.warnSecondary, Radius.xl).clip(Radius.xl).background(c.inputMajor)) {
-        Row(Modifier.fillMaxWidth().background(c.warnTertiary).padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (answered) Spinner(10.dp, c.warn) else Box(Modifier.size(6.dp).clip(CircleShape).background(c.warn))
+    Column(
+        Modifier.fillMaxWidth()
+            .ignoreTapsUntil(settled)
+            .frost(Radius.xl, GlassTier.Thick, elevation = 16.dp)
+            .background(c.canvas.copy(alpha = if (c.isDark) 0.86f else 0.82f))
+            .border(
+                1.dp,
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    listOf(c.warn.copy(alpha = 0.65f), c.warnSecondary),
+                ),
+                Radius.xl,
+            )
+            .clip(Radius.xl),
+    ) {
+        Row(
+            Modifier.fillMaxWidth()
+                .background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        listOf(c.warnTertiary, c.warnTertiary.copy(alpha = 0.45f)),
+                    ),
+                )
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (answered) Spinner(10.dp, c.warn) else Box(Modifier.size(7.dp).clip(CircleShape).background(c.warn))
             Spacer(Modifier.width(8.dp))
-            Text(strip, style = DshType.xs13.copy(lineHeight = DshType.xxs12.lineHeight), color = c.warnLabel)
+            Text(strip, style = DshType.xs13m.copy(lineHeight = DshType.xxs12.lineHeight), color = c.warnLabel)
         }
         Column(Modifier.weight(1f, fill = false).heightIn(max = 336.dp).verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, top = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp), content = body)
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) { actions() }
@@ -238,7 +262,20 @@ fun QuestionCard(q: PendingQuestion, onSubmit: (Map<String, Pair<List<String>, S
     val question = q.questions.getOrNull(page) ?: return
     val settled = rememberSettled(400)
     LaunchedEffect(submitting) { if (submitting) { delay(15_000); submitting = false } }
-    Column(Modifier.fillMaxWidth().ignoreTapsUntil(settled).elevated(Radius.xl, c.borderL2, 6.dp).clip(Radius.xl).background(c.inputMajor)) {
+    Column(
+        Modifier.fillMaxWidth()
+            .ignoreTapsUntil(settled)
+            .frost(Radius.xl, GlassTier.Thick, elevation = 16.dp)
+            .background(c.canvas.copy(alpha = if (c.isDark) 0.86f else 0.82f))
+            .border(
+                0.75.dp,
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    listOf(c.brandGradStart.copy(alpha = 0.5f), c.borderL2),
+                ),
+                Radius.xl,
+            )
+            .clip(Radius.xl),
+    ) {
         Column(Modifier.weight(1f, fill = false).heightIn(max = 460.dp).verticalScroll(rememberScrollState()).padding(start = 18.dp, end = 12.dp, top = 12.dp)) {
             question.header?.let { Text(it, style = DshType.xxxs11, color = c.labelTertiary) }
             Text(question.text, style = DshType.base16m.copy(fontSize = DshType.base16.fontSize * 0.94f, lineHeight = DshType.base16.lineHeight), color = c.labelPrimary)

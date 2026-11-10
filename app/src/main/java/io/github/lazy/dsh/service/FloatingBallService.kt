@@ -39,6 +39,8 @@ import io.github.lazy.dsh.core.capability.AgentScreen
 import io.github.lazy.dsh.core.capability.CapabilityHub
 import io.github.lazy.dsh.core.capability.LiveCall
 import io.github.lazy.dsh.core.data.SettingsRepository
+import io.github.lazy.dsh.core.data.StickerCatalog
+import io.github.lazy.dsh.core.data.PerformanceMode
 import io.github.lazy.dsh.core.platform.ActivityStarts
 import io.github.lazy.dsh.core.platform.Notifications
 import io.github.lazy.dsh.core.session.Block
@@ -84,8 +86,19 @@ class FloatingBallService : Service() {
     private var view: ImageView? = null
     private var pulse: ObjectAnimator? = null
     private var capsule: TextView? = null
+    private var stickerView: ImageView? = null
+    private var stickerUntil = 0L
+    private var stickerStatus: CapsuleStatus? = null
+    private var stickerJob: kotlinx.coroutines.Job? = null
     /** The conversation the capsule speaks for (tap opens it). */
     private var capsuleSession: String? = null
+    /** What the agent status says; the capsule shows [noticeText] instead while a notice is up. */
+    private var statusText: String = ""
+    /** The stroke the agent status wants (a notice draws its own). */
+    private var statusStroke: Int = 0
+    /** A transient bubble that is not an agent turn (a class reminder). */
+    private var noticeText: String? = null
+    private val noticeHide = Runnable { noticeText = null; applyCapsule(); placeCapsule(); render() }
     private var border: ControlBorder? = null
     private var borderPulse: ObjectAnimator? = null
     private var inFront = false
@@ -170,7 +183,11 @@ class FloatingBallService : Service() {
         wm.addView(v, lp)
         view = v
         addCapsule()
+        addSticker()
         active = this
+        // Callers run on the alarm's or a tool's thread; views only from the main one.
+        val main = android.os.Handler(mainLooper)
+        io.github.lazy.dsh.core.platform.BallNotice.attach { text -> main.post { notice(text) } }
         ProcessLifecycleOwner.get().lifecycle.addObserver(appInFront)
         scope.launch {
             store.status.map { st -> st.entries.firstOrNull { it.value == RowStatus.Approval || it.value == RowStatus.Question }?.key to st.values.any { it == RowStatus.Running } }
@@ -179,7 +196,11 @@ class FloatingBallService : Service() {
         scope.launch {
             settings.settings.map { it.ballStatus to it.performance }.distinctUntilChanged().collect { (on, mode) ->
                 statusOn = on
-                if (ballMode != mode) { ballMode = mode; view?.let { _ -> show(lastWaiting, lastRunning) } }
+                if (ballMode != mode) {
+                    ballMode = mode
+                    stickerUntil = 0L
+                    view?.let { _ -> show(lastWaiting, lastRunning) }
+                }
                 render()
             }
         }
@@ -192,8 +213,33 @@ class FloatingBallService : Service() {
         if (destroyed) return
         val shooting = shotHides > 0
         view?.visibility = when { inFront -> View.GONE; shooting -> View.INVISIBLE; else -> View.VISIBLE }
-        capsule?.visibility = if (statusOn && !inFront && !shooting && !dragging && capsuleSession != null) View.VISIBLE else View.GONE
+        // A notice shows even when the status capsule is off: it is not agent status.
+        val speaking = noticeText != null || (statusOn && capsuleSession != null)
+        capsule?.visibility = if (!inFront && !shooting && !dragging && speaking) View.VISIBLE else View.GONE
+        val showSticker = !inFront && !shooting && !dragging && statusOn &&
+            noticeText == null && SystemClock.elapsedRealtime() < stickerUntil
+        stickerView?.visibility = if (showSticker) View.VISIBLE else View.GONE
         val showBorder = statusOn && controlling && !shooting && (border != null || addBorder())
+        // Android combines opacity for overlapping windows from the same app. Reserve half
+        // the budget for the sticker so a decorative reaction never blocks a screen tap.
+        if (Build.VERSION.SDK_INT >= 31) border?.let { b ->
+            val params = b.layoutParams as WindowManager.LayoutParams
+            val maximum = getSystemService(InputManager::class.java).maximumObscuringOpacityForTouch
+            val opacity = if (showSticker) maximum / 2 else maximum
+            if (params.alpha != opacity) {
+                params.alpha = opacity
+                runCatching { wm.updateViewLayout(b, params) }
+            }
+        }
+        if (Build.VERSION.SDK_INT >= 31) stickerView?.let { image ->
+            val params = image.layoutParams as WindowManager.LayoutParams
+            val maximum = getSystemService(InputManager::class.java).maximumObscuringOpacityForTouch
+            val opacity = if (showBorder) maximum / 2 else maximum
+            if (params.alpha != opacity) {
+                params.alpha = opacity
+                runCatching { wm.updateViewLayout(image, params) }
+            }
+        }
         border?.visibility = if (showBorder) View.VISIBLE else View.GONE
         if (showBorder && borderPulse == null) borderPulse = ObjectAnimator.ofFloat(border, View.ALPHA, 1f, 0.45f).apply {
             duration = 1200; repeatMode = ValueAnimator.REVERSE; repeatCount = ValueAnimator.INFINITE; start()
@@ -202,16 +248,91 @@ class FloatingBallService : Service() {
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
+    /** A small, touch-through reaction above the ball; shares the status switch and screenshot hiding. */
+    private fun addSticker() {
+        val image = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            visibility = View.GONE
+        }
+        val params = WindowManager.LayoutParams(dp(88), dp(88), WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            PixelFormat.TRANSLUCENT).apply {
+            gravity = Gravity.TOP or Gravity.START
+            // Allow touches through this decorative window on Android 12+.
+            alpha = if (Build.VERSION.SDK_INT >= 31)
+                getSystemService(InputManager::class.java).maximumObscuringOpacityForTouch / 2 else 0.8f
+        }
+        if (runCatching { wm.addView(image, params) }.isSuccess) stickerView = image
+    }
+
+    private fun placeSticker() {
+        val image = stickerView ?: return
+        val ball = view?.layoutParams as? WindowManager.LayoutParams ?: return
+        val params = image.layoutParams as? WindowManager.LayoutParams ?: return
+        val (width, height) = screenSize(wm)
+        params.x = (ball.x + (ball.width - params.width) / 2).coerceIn(0, (width - params.width).coerceAtLeast(0))
+        params.y = (if (ball.y >= params.height + dp(8)) ball.y - params.height - dp(8)
+            else ball.y + ball.height + dp(8)).coerceIn(0, (height - params.height).coerceAtLeast(0))
+        runCatching { wm.updateViewLayout(image, params) }
+    }
+
+    private fun react(status: CapsuleStatus?) {
+        // Tool summaries change frequently: only a change of phase starts a new reaction loop.
+        val samePhase = when {
+            status is CapsuleStatus.Working && stickerStatus is CapsuleStatus.Working -> true
+            else -> status == stickerStatus
+        }
+        if (samePhase) return
+        stickerStatus = status
+        stickerJob?.cancel()
+        stickerUntil = 0L
+        if (status == null) return
+        stickerJob = scope.launch {
+            do {
+                if (!inFront && statusOn && !dragging && shotHides == 0 && noticeText == null) {
+                    val leaf = ballMode == PerformanceMode.Leaf
+                    val mood = when (status) {
+                        is CapsuleStatus.Working -> if (leaf) "思考" else "淡定"
+                        is CapsuleStatus.NeedsYou -> if (leaf) "好奇" else "疑惑"
+                        is CapsuleStatus.Ended -> when (status.end) {
+                            CapsuleStatus.End.Done -> if (leaf) "欢呼" else "得意"
+                            else -> if (leaf) "思考" else "无奈"
+                        }
+                    }
+                    val sticker = StickerCatalog.forMode(ballMode).first { it.mood == mood }
+                    stickerView?.setImageResource(sticker.res)
+                    placeSticker()
+                    stickerUntil = SystemClock.elapsedRealtime() + 2800L
+                    render()
+                }
+                delay(2800L)
+                stickerUntil = 0L
+                render()
+                if (status !is CapsuleStatus.Working) break
+                delay(17_200L)
+            } while (true)
+        }
+    }
+
     private fun addCapsule() {
         val c = TextView(this).apply {
             setTextColor(0xFFFFFFFF.toInt())
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             setSingleLine(); ellipsize = TextUtils.TruncateAt.END
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(12), 0, dp(12), 0)
-            background = GradientDrawable().apply { cornerRadius = dp(16).toFloat(); setColor(CAPSULE_FILL) }
+            setPadding(dp(14), 0, dp(14), 0)
+            elevation = dp(10).toFloat()
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(0xF01C202B.toInt(), 0xEE10131A.toInt()),
+            ).apply { cornerRadius = dp(18).toFloat() }
             visibility = View.GONE
-            setOnClickListener { capsuleSession?.let { id -> go(TapTargets.capsule(id, QuickActivity.panelSession(this@FloatingBallService))) } }
+            setOnClickListener {
+                // A notice has no conversation behind it: a tap just brings DSH up.
+                if (noticeText != null) { noticeText = null; applyCapsule(); render(); open() }
+                else capsuleSession?.let { id -> go(TapTargets.capsule(id, QuickActivity.panelSession(this@FloatingBallService))) }
+            }
         }
         val lp = WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, dp(32), WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, PixelFormat.TRANSLUCENT).apply { gravity = Gravity.TOP or Gravity.START }
@@ -231,8 +352,10 @@ class FloatingBallService : Service() {
         lp.gravity = Gravity.TOP or if (onRight) Gravity.END else Gravity.START
         lp.x = if (onRight) w - ball.x + gap else ball.x + ball.width + gap
         lp.y = ball.y + (ball.height - lp.height) / 2
-        c.maxWidth = minOf(dp(240), w - ball.width - dp(32))
+        // A notice is prose (time, course, room) and gets a wider line than an agent status.
+        c.maxWidth = minOf(dp(if (noticeText != null) 300 else 240), w - ball.width - dp(32))
         runCatching { wm.updateViewLayout(c, lp) }
+        placeSticker()
     }
 
     /** False when the overlay permission is gone: the service stops (the ball cannot be shown either). */
@@ -280,20 +403,43 @@ class FloatingBallService : Service() {
 
     private fun showCapsule(sessionId: String?, status: CapsuleStatus?, app: String?) {
         val c = capsule ?: return
+        react(status)
         capsuleSession = sessionId.takeIf { status != null }
         if (status != null) {
-            c.text = capsuleText(status, app)
-            c.contentDescription = c.text
-            (c.background as? GradientDrawable)?.setStroke(dp(1), when (status) {
+            statusText = capsuleText(status, app)
+            statusStroke = when (status) {
                 is CapsuleStatus.NeedsYou -> COLOR_NEEDS_YOU
                 is CapsuleStatus.Working -> COLOR_WORKING
                 is CapsuleStatus.Ended -> when (status.end) {
                     CapsuleStatus.End.Done -> COLOR_DONE; CapsuleStatus.End.Stopped -> COLOR_STOPPED; CapsuleStatus.End.Failed -> COLOR_FAILED
                 }
-            })
+            }
+            applyCapsule()
             placeCapsule()
-        }
+        } else statusText = ""
         render()
+    }
+
+    /** The capsule's text and stroke: a live notice wins over the agent status underneath it. */
+    private fun applyCapsule() {
+        val c = capsule ?: return
+        val text = noticeText ?: statusText
+        if (text.isEmpty()) return
+        c.text = text
+        c.contentDescription = text
+        (c.background as? GradientDrawable)?.setStroke(dp(1), if (noticeText != null) COLOR_NOTICE else statusStroke)
+    }
+
+    /** A short bubble beside the ball, not tied to any conversation (a class reminder). */
+    private fun notice(text: String) {
+        noticeText = text
+        val host = capsule ?: run { android.util.Log.w("BallNotice", "no capsule view"); return }
+        host.removeCallbacks(noticeHide)
+        host.postDelayed(noticeHide, NOTICE_MS)
+        applyCapsule()
+        placeCapsule()
+        render()
+        android.util.Log.i("BallNotice", "capsule=${host.text} vis=${host.visibility} inFront=$inFront stat=$statusOn")
     }
 
     private fun capsuleText(s: CapsuleStatus, app: String?): String = when (s) {
@@ -349,7 +495,7 @@ class FloatingBallService : Service() {
         var counted = false
         try {
             val wait = withContext(Dispatchers.Main.immediate) {
-                if (shotHides++ == 0) hiddenAt = if (listOfNotNull(view, capsule, border).any { it.visibility == View.VISIBLE }) SystemClock.elapsedRealtime() else 0L
+                if (shotHides++ == 0) hiddenAt = if (listOfNotNull(view, capsule, border, stickerView).any { it.visibility == View.VISIBLE }) SystemClock.elapsedRealtime() else 0L
                 counted = true
                 render()
                 if (hiddenAt == 0L) 0L else hiddenAt + SHOT_HIDE_MS - SystemClock.elapsedRealtime()
@@ -433,13 +579,14 @@ class FloatingBallService : Service() {
     override fun onDestroy() {
         destroyed = true
         if (active === this) active = null
+        io.github.lazy.dsh.core.platform.BallNotice.detach()
         scope.cancel()
         pulse?.cancel(); pulse = null
         borderPulse?.cancel(); borderPulse = null
         ProcessLifecycleOwner.get().lifecycle.removeObserver(appInFront)
         val wm = getSystemService(WindowManager::class.java)
-        listOfNotNull(view, capsule, border).forEach { runCatching { wm.removeView(it) } }
-        view = null; capsule = null; border = null
+        listOfNotNull(view, capsule, border, stickerView).forEach { runCatching { wm.removeView(it) } }
+        view = null; capsule = null; border = null; stickerView = null
         super.onDestroy()
     }
 
@@ -468,12 +615,16 @@ class FloatingBallService : Service() {
 
     companion object {
         private const val SHOT_HIDE_MS = 120L
+        /** How long a bubble that is not an agent turn stays up. */
+        private const val NOTICE_MS = 9_000L
         private const val CAPSULE_FILL = 0xE60F1115.toInt()
         private const val COLOR_WORKING = 0xFF4176E6.toInt()
         private const val COLOR_NEEDS_YOU = 0xFFF59E0B.toInt()
         private const val COLOR_DONE = 0xFF22C55E.toInt()
         private const val COLOR_STOPPED = 0xFF9CA3AF.toInt()
         private const val COLOR_FAILED = 0xFFEF4444.toInt()
+        /** A bubble that is not an agent turn (a class reminder). */
+        private const val COLOR_NOTICE = 0xFF38BDF8.toInt()
 
         /** The running service (cleared in onDestroy). */
         @SuppressLint("StaticFieldLeak")

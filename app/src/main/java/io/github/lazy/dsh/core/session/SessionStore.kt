@@ -940,6 +940,7 @@ class SessionStore @Inject constructor(
             return when {
                 "accessibility" in w -> "accessibility"
                 "notification access" in w -> "notif_access"
+                "notification" in w -> "notifications"
                 "all files" in w -> "files"
                 "do not disturb" in w -> "dnd"
                 "modify system" in w -> "write_settings"

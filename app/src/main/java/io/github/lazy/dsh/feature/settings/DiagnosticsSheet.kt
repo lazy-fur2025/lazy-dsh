@@ -1,6 +1,7 @@
 package io.github.lazy.dsh.feature.settings
 
 import android.content.Intent
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -49,23 +50,24 @@ import io.github.lazy.dsh.core.designsystem.copyText
  * goes through the system chooser; the export adds the redacted engine log tail, [DiagnosticsExport]).
  * Nothing is sent automatically.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiagnosticsSheet(text: String, onDismiss: () -> Unit) {
     val c = Dsh.colors
     val context = LocalContext.current
-    val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     var exported by remember { mutableStateOf<String?>(null) }
-    ModalBottomSheet(onDismiss, sheetState = sheet, containerColor = c.bgLayer2,
-        shape = Radius.panel.copy(bottomStart = androidx.compose.foundation.shape.CornerSize(0.dp), bottomEnd = androidx.compose.foundation.shape.CornerSize(0.dp)),
-        scrimColor = c.scrim, tonalElevation = 0.dp) {
-        DialogBlurBehind()
-        Column(Modifier.fillMaxWidth().heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.85f).dp).navigationBarsPadding().padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.diag_title), style = DshType.s14m, color = c.labelPrimary)
+    io.github.lazy.dsh.core.designsystem.DSheet(onDismiss) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.diag_title), Modifier.weight(1f), style = DshType.base16m, color = c.labelPrimary)
+                io.github.lazy.dsh.core.designsystem.IconBtn(R.drawable.dsw_close_outline, onDismiss, size = 36.dp, contentDescription = stringResource(R.string.close))
+            }
             Text(stringResource(R.string.diag_note), style = DshType.xxs12, color = c.labelTertiary)
-            SelectionContainer(Modifier.weight(1f, fill = false).fillMaxWidth().clip(Radius.lg).background(c.codeBlock)) {
+            SelectionContainer(
+                Modifier.weight(1f, fill = false).fillMaxWidth().clip(Radius.lg)
+                    .background(c.codeBlock)
+                    .border(io.github.lazy.dsh.core.designsystem.Hairline, c.borderL2, Radius.lg),
+            ) {
                 Text(text, Modifier.verticalScroll(rememberScrollState()).horizontalScroll(rememberScrollState()).padding(12.dp),
                     style = DshType.mono11, color = c.labelSecondary)
             }
@@ -78,12 +80,12 @@ fun DiagnosticsSheet(text: String, onDismiss: () -> Unit) {
                                 .getOrElse { context.getString(R.string.diag_export_failed, it.message ?: it.javaClass.simpleName) }
                         }
                     }
-                }, variant = BtnVariant.Outline, size = BtnSize.Sm)
+                }, variant = BtnVariant.Outline, size = BtnSize.Sm, icon = R.drawable.dsw_download_outline)
                 DButton(stringResource(R.string.share), {
                     val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
                     runCatching { context.startActivity(Intent.createChooser(send, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-                }, variant = BtnVariant.Outline, size = BtnSize.Sm)
-                DButton(stringResource(R.string.copy), { copyText(context, text) }, size = BtnSize.Sm)
+                }, variant = BtnVariant.Outline, size = BtnSize.Sm, icon = R.drawable.dsw_share_outline)
+                DButton(stringResource(R.string.copy), { copyText(context, text) }, size = BtnSize.Sm, icon = R.drawable.dsw_copy_outline)
             }
         }
     }

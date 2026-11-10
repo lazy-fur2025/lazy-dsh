@@ -255,6 +255,7 @@
         </service>
 
         <receiver android:name=".core.trigger.TriggerReceiver" android:exported="false" />
+        <receiver android:name=".core.timetable.TimetableAlarmReceiver" android:exported="false" />
         <receiver android:name=".core.trigger.BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
