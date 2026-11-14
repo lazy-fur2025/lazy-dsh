@@ -1,6 +1,7 @@
 package io.github.lazy.dsh.feature.conversation
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.ArrayRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -41,6 +42,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -71,9 +73,14 @@ import io.github.lazy.dsh.core.designsystem.Tone
 import io.github.lazy.dsh.core.designsystem.Whale
 import io.github.lazy.dsh.core.designsystem.frost
 import io.github.lazy.dsh.core.designsystem.glassBlur
+import io.github.lazy.dsh.core.greeting.Headline
+import io.github.lazy.dsh.core.greeting.HeroMoment
+import io.github.lazy.dsh.core.greeting.HolidayId
+import io.github.lazy.dsh.core.greeting.Subline
 import io.github.lazy.dsh.core.session.Conversation
 import io.github.lazy.dsh.core.session.SessionLive
 import io.github.lazy.dsh.feature.trajectory.TrajectoryView
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -81,7 +88,7 @@ import kotlinx.coroutines.launch
  * 对话 / 轨迹 toggle for the same session.
  */
 @Composable
-fun HomeScreen(vm: HomeViewModel, onSettings: (String?) -> Unit, onAutomation: () -> Unit, onFiles: () -> Unit) {
+fun HomeScreen(vm: HomeViewModel, onSettings: (String?) -> Unit, onAutomation: () -> Unit, onFiles: () -> Unit, onTimetable: () -> Unit) {
     val c = Dsh.colors
     val drawer = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -105,7 +112,8 @@ fun HomeScreen(vm: HomeViewModel, onSettings: (String?) -> Unit, onAutomation: (
                     onNew = { vm.newSession(null); scope.launch { drawer.close() } },
                     onOpen = { vm.open(it); scope.launch { drawer.close() } },
                     onAutomation = { scope.launch { drawer.close() }; onAutomation() },
-        onFiles = { scope.launch { drawer.close() }; onFiles() },
+                    onFiles = { scope.launch { drawer.close() }; onFiles() },
+                    onTimetable = { scope.launch { drawer.close() }; onTimetable() },
                     onSettings = { section -> scope.launch { drawer.close() }; onSettings(section) },
                     onClose = { scope.launch { drawer.close() } },
                     onRename = vm::rename, onPin = vm::pin, onMute = vm::mute, onArchive = vm::archive, onDelete = vm::delete,
@@ -305,25 +313,66 @@ internal fun HeroHeading(animate: Boolean = true) {
 }
 
 /**
- * The home page speaks to the user instead of labelling itself: a greeting that fits the hour, and
- * one caring line under it. Both are drawn from the locale's pools once per launch (rememberSaveable
- * keeps them steady across rotation), so opening the app never shows the same page twice.
+ * The home page speaks to the user instead of labelling itself. The date chooses the headline
+ * (festival > Friday evening > weekend > weekday) and the clock chooses the line under it
+ * (early bird / night owl / ordinary care), so "周五晚上" and "夜猫子" can appear together.
+ * Both are drawn once per moment; a one-minute tick keeps the page honest across midnight and
+ * the 05:00 / 07:30 / 18:00 / 23:00 boundaries without re-rolling while nothing changes.
  */
 @Composable
 private fun rememberHeroGreeting(): Pair<String, String> {
-    val hour by remember { mutableIntStateOf(java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)) }
-    val pool = when {
-        hour in 5..10 -> R.array.hero_greet_morning
-        hour in 11..17 -> R.array.hero_greet_day
-        hour in 18..22 -> R.array.hero_greet_evening
-        else -> R.array.hero_greet_night
+    val now by produceState(initialValue = java.time.LocalDateTime.now()) {
+        while (true) {
+            val current = java.time.LocalDateTime.now()
+            val nextMinute = current.plusMinutes(1).withSecond(0).withNano(0)
+            delay(java.time.Duration.between(current, nextMinute).toMillis().coerceAtLeast(500L))
+            value = java.time.LocalDateTime.now()
+        }
     }
-    val lines = stringArrayResource(pool)
-    val care = stringArrayResource(R.array.hero_care)
-    val i = rememberSaveable { mutableIntStateOf(if (lines.isEmpty()) 0 else Random.nextInt(lines.size)) }
-    val j = rememberSaveable { mutableIntStateOf(if (care.isEmpty()) 0 else Random.nextInt(care.size)) }
+    val moment = remember(now) { HeroMoment.of(now) }
+    val headlineRes = headlineArray(moment.headline)
+    val sublineRes = sublineArray(moment.subline)
+    val lines = stringArrayResource(headlineRes)
+    val sublines = stringArrayResource(sublineRes)
+    val i = rememberSaveable(headlineRes) { mutableIntStateOf(if (lines.isEmpty()) 0 else Random.nextInt(lines.size)) }
+    val j = rememberSaveable(sublineRes) { mutableIntStateOf(if (sublines.isEmpty()) 0 else Random.nextInt(sublines.size)) }
     return (lines.getOrNull(i.intValue % maxOf(lines.size, 1)) ?: stringResource(R.string.hero_title)) to
-        (care.getOrNull(j.intValue % maxOf(care.size, 1)) ?: stringResource(R.string.hero_subtitle))
+        (sublines.getOrNull(j.intValue % maxOf(sublines.size, 1)) ?: stringResource(R.string.hero_subtitle))
+}
+
+@ArrayRes
+private fun headlineArray(headline: Headline): Int = when (headline) {
+    is Headline.Holiday -> when (headline.id) {
+        HolidayId.NEW_YEAR_EVE -> R.array.hero_holiday_new_year_eve
+        HolidayId.NEW_YEAR -> R.array.hero_holiday_new_year
+        HolidayId.SPRING_FESTIVAL -> R.array.hero_holiday_spring_festival
+        HolidayId.QINGMING -> R.array.hero_holiday_qingming
+        HolidayId.LABOR_DAY -> R.array.hero_holiday_labor_day
+        HolidayId.DRAGON_BOAT -> R.array.hero_holiday_dragon_boat
+        HolidayId.MID_AUTUMN -> R.array.hero_holiday_mid_autumn
+        HolidayId.NATIONAL_DAY -> R.array.hero_holiday_national_day
+    }
+    Headline.FridayEvening -> R.array.hero_fri_evening
+    is Headline.Weekend -> when (headline.day) {
+        java.time.DayOfWeek.SUNDAY -> R.array.hero_sun
+        else -> R.array.hero_sat
+    }
+    is Headline.Weekday -> when (headline.day) {
+        java.time.DayOfWeek.MONDAY -> R.array.hero_mon
+        java.time.DayOfWeek.TUESDAY -> R.array.hero_tue
+        java.time.DayOfWeek.WEDNESDAY -> R.array.hero_wed
+        java.time.DayOfWeek.THURSDAY -> R.array.hero_thu
+        java.time.DayOfWeek.FRIDAY -> R.array.hero_fri
+        java.time.DayOfWeek.SATURDAY -> R.array.hero_sat
+        java.time.DayOfWeek.SUNDAY -> R.array.hero_sun
+    }
+}
+
+@ArrayRes
+private fun sublineArray(subline: Subline): Int = when (subline) {
+    Subline.EARLY_BIRD -> R.array.hero_earlybird
+    Subline.NIGHT_OWL -> R.array.hero_nightowl
+    Subline.CARE -> R.array.hero_care
 }
 
 /** Bottom dock: [todo dock | queue dock] above the composer slot (approval ▸ permission ▸ question ▸ composer). */

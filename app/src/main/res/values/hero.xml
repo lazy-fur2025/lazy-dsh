@@ -1,23 +1,121 @@
 <resources>
-    <string-array name="hero_greet_morning">
-        <item>早上好</item>
-        <item>早安，睡得好吗</item>
-        <item>新的一天，慢慢来</item>
+    <!-- Weekday headlines. One pool per day so the page knows what day it is. -->
+    <string-array name="hero_mon">
+        <item>周一，努力！</item>
+        <item>新的一周，先啃最硬的那块</item>
+        <item>周一嘛，先把状态找回来</item>
+        <item>今天列三件事，做完就赢</item>
+        <item>一周的第一天，慢热也算开始</item>
     </string-array>
-    <string-array name="hero_greet_day">
-        <item>下午好</item>
-        <item>又见面了</item>
-        <item>今天想让我帮你做点什么</item>
+    <string-array name="hero_tue">
+        <item>周二，节奏起来了</item>
+        <item>昨天开了头，今天接着走</item>
+        <item>周二不慌，一件一件来</item>
+        <item>一周还长，别急着冲刺</item>
+        <item>今天适合把难事推进一格</item>
     </string-array>
-    <string-array name="hero_greet_evening">
-        <item>晚上好</item>
-        <item>忙完了吗</item>
-        <item>今天过得怎么样</item>
+    <string-array name="hero_wed">
+        <item>周三，一周过半</item>
+        <item>到半山腰了，歇口气再走</item>
+        <item>周三最容易累，别硬扛</item>
+        <item>再撑两天，周末在前面</item>
+        <item>一半了，给自己一点掌声</item>
     </string-array>
-    <string-array name="hero_greet_night">
-        <item>夜深了</item>
-        <item>还没睡吗</item>
-        <item>别熬太晚</item>
+    <string-array name="hero_thu">
+        <item>周四，胜利在望</item>
+        <item>明天就是周五，稳住</item>
+        <item>今天做完，明天轻松</item>
+        <item>周四适合收尾，也适合偷个懒</item>
+        <item>再坚持一下，快到岸了</item>
+    </string-array>
+    <string-array name="hero_fri">
+        <item>周五，最后一天</item>
+        <item>周五了，把手上的事收个尾</item>
+        <item>今天下班，世界就是你的</item>
+        <item>周五，值得期待</item>
+        <item>一周的最后一天，别留尾巴</item>
+    </string-array>
+    <string-array name="hero_fri_evening">
+        <item>周五晚上，真令人兴奋</item>
+        <item>周五夜，终于可以松口气</item>
+        <item>下班了，今晚不聊工作</item>
+        <item>周五的晚上，连风都是自由的</item>
+        <item>一周结束，今晚归你</item>
+    </string-array>
+
+    <string-array name="hero_sat">
+        <item>周六好，今天归你</item>
+        <item>终于到周末了，想怎么过</item>
+        <item>周六了，慢一点也没关系</item>
+        <item>周末不赶路，只赶开心</item>
+        <item>今天不用打卡，做点喜欢的</item>
+        <item>周六，想睡到几点就几点</item>
+    </string-array>
+    <string-array name="hero_sun">
+        <item>周日好，把时间还给自己</item>
+        <item>周日了，收个尾，明天慢慢来</item>
+        <item>今天不用打卡，做点喜欢的</item>
+        <item>周日适合什么都不安排</item>
+        <item>假期最后一天，别亏待自己</item>
+        <item>周日，慢一点也没关系</item>
+    </string-array>
+
+    <!-- Festivals (China). Make-up workdays are ignored: Saturday and Sunday always read as weekend. -->
+    <string-array name="hero_holiday_new_year">
+        <item>新年好，今年也一起</item>
+        <item>新的一年，慢慢来</item>
+        <item>元旦快乐，先给自己放个假</item>
+    </string-array>
+    <string-array name="hero_holiday_new_year_eve">
+        <item>这一年辛苦了，明年见</item>
+        <item>跨年夜，和旧的一年道个别</item>
+        <item>最后一晚，把遗憾留在今年</item>
+    </string-array>
+    <string-array name="hero_holiday_spring_festival">
+        <item>新春快乐，吃好睡好</item>
+        <item>过年好，今年也要顺顺利利</item>
+        <item>春节快乐，红包别忘了收</item>
+    </string-array>
+    <string-array name="hero_holiday_qingming">
+        <item>清明安康，记得看看春天</item>
+        <item>清明，想念的人也在心里</item>
+        <item>今天适合慢一点</item>
+    </string-array>
+    <string-array name="hero_holiday_labor_day">
+        <item>劳动节快乐，今天不许忙</item>
+        <item>五一快乐，好好歇几天</item>
+        <item>劳动节，先把活放下</item>
+    </string-array>
+    <string-array name="hero_holiday_dragon_boat">
+        <item>端午安康，粽子别吃太多</item>
+        <item>端午快乐，记得看看龙舟</item>
+        <item>粽叶香了，今天慢一点</item>
+    </string-array>
+    <string-array name="hero_holiday_mid_autumn">
+        <item>中秋快乐，月亮和家都在</item>
+        <item>中秋，记得吃块月饼</item>
+        <item>月亮圆了，人也该团圆</item>
+    </string-array>
+    <string-array name="hero_holiday_national_day">
+        <item>国庆快乐，好好放个假</item>
+        <item>七天假，想去哪就去哪</item>
+        <item>国庆，先把自己还给生活</item>
+    </string-array>
+
+    <!-- Time-of-day sublines, shown under whichever headline the date chose. -->
+    <string-array name="hero_earlybird">
+        <item>起得真早，今天会很长</item>
+        <item>早起的鸟儿，先喝口水</item>
+        <item>天刚亮，先把最重要的事做了</item>
+        <item>这么早就醒了，状态不错</item>
+        <item>清晨归你，慢慢来</item>
+    </string-array>
+    <string-array name="hero_nightowl">
+        <item>夜猫子又上线了</item>
+        <item>这个点还醒着，我陪你</item>
+        <item>夜深了，做完这件就去睡</item>
+        <item>熬夜可以，别忘了明天</item>
+        <item>世界都睡了，就剩我们</item>
     </string-array>
     <string-array name="hero_care">
         <item>有什么想做的，直接说就好</item>

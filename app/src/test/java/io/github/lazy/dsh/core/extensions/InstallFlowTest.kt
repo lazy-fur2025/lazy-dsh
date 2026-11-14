@@ -54,6 +54,13 @@ class InstallFlowTest {
         assertEquals(0, engine.calls.size)
     }
 
+    @Test fun `a remote tarball whose bundle is unknown still reaches the card`() = runBlocking {
+        engine.on(ExtMethods.INSPECT, """{"spec":"https://example.com/y.tgz","kind":"tarball","name":"y","version":"1.0.0","bundle":null}""")
+        flow.start("https://example.com/y.tgz")
+        eventually { flow.state.value is InstallFlow.State.Confirm }
+        assertEquals(null, (flow.state.value as InstallFlow.State.Confirm).info.bundle)
+    }
+
     @Test fun `inspect refusals end the flow with the reason`() = runBlocking {
         engine.on(ExtMethods.INSPECT, """{"spec":"x","kind":"npm","error":{"code":"not-bundle","message":"x 不是 DSH 插件"}}""")
         flow.start("x-pkg")

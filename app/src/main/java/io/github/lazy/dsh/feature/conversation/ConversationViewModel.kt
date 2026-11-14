@@ -117,9 +117,13 @@ open class ConversationController(
         store.setViewing(this, sessionId.value)
     }
 
-    /** The session's preset is the store's own; [live] can still be the previous session's right after open/newSession. */
-    fun send(text: String, images: List<Pair<String, String>> = emptyList(), now: Boolean = false) = viewModelScope.launch {
-        store.send(sessionId.value, text, images, now = now)
+    /**
+     * The session's preset is the store's own; [live] can still be the previous session's right
+     * after open/newSession. Store-scoped on purpose: dismissing the quick panel during the
+     * engine's cold start must not cancel the message the user already sent.
+     */
+    fun send(text: String, images: List<Pair<String, String>> = emptyList(), now: Boolean = false) {
+        store.launchSend(sessionId.value, text, images, now)
     }
 
     /** The composer took [SessionLive.restoredDraft] (queued messages handed back after a stop or failure). */

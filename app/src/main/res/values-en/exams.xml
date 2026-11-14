@@ -1,0 +1,14 @@
+<resources>
+    <string name="tt_exams">Exams</string>
+    <string name="tt_exam_sync">Sync exams</string>
+    <string name="tt_exam_updated">Last synced</string>
+    <string name="tt_exam_not_synced">Exams have not been synced yet. Sync to load them from the school system.</string>
+    <string name="tt_exam_empty">No exams published for this term yet.</string>
+    <string name="tt_exam_login">Login expired. Exams were not refreshed; the previous cache is kept.</string>
+    <string name="tt_exam_failed">Exam sync failed. The previous cache is kept. Please try again.</string>
+    <string name="tt_exam_old_term">Showing another term’s cache. Sync the current term.</string>
+    <string name="tt_exam_pending">Not published</string>
+    <string name="tt_exam_campus">Campus</string>
+    <string name="tt_exam_room">Exam room</string>
+    <string name="tt_exam_seat">Seat</string>
+</resources>

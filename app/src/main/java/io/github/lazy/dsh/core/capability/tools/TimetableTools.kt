@@ -17,14 +17,13 @@ import io.github.lazy.dsh.core.model.Risk
 import io.github.lazy.dsh.core.model.ToolGroup
 import io.github.lazy.dsh.core.timetable.Course
 import io.github.lazy.dsh.core.timetable.Ics
-import io.github.lazy.dsh.core.timetable.NotTimetableJson
 import io.github.lazy.dsh.core.timetable.Schedule
 import io.github.lazy.dsh.core.timetable.Season
 import io.github.lazy.dsh.core.timetable.TimetableParser
 import io.github.lazy.dsh.core.timetable.TimetableReminders
 import io.github.lazy.dsh.core.timetable.TimetableStore
+import io.github.lazy.dsh.core.timetable.TimetableSync
 import io.github.lazy.dsh.core.timetable.TimetableText
-import io.github.lazy.dsh.core.timetable.firstMondayOf
 import io.github.lazy.dsh.core.timetable.termIdFor
 import io.github.lazy.dsh.core.timetable.weekdayCn
 import kotlinx.coroutines.Dispatchers
@@ -54,11 +53,8 @@ class TimetableTools @Inject constructor(
     private val store: TimetableStore,
     private val browser: BrowserTools,
     private val reminders: TimetableReminders,
+    private val sync: TimetableSync,
 ) : ToolSet {
-
-    /** The list endpoint answers `{ total, rows: [...] }` straight from the timetable page. */
-    private fun listUrl(term: String) =
-        "$BASE/new/xsgrkbcx!getDataList.action?xnxqdm=$term&zc=&page=1&rows=1000&sort=kxh&order=asc"
 
     private fun cached(): List<Course> = store.courses()
 
@@ -68,6 +64,34 @@ class TimetableTools @Inject constructor(
     )
 
     override val tools = listOf(
+        object : Tool(
+            "timetable_exams", ToolGroup.Timetable, Risk.read, false,
+            "Read cached exam arrangements, including exact exam times, campus, room and seat. Set sync=true to refresh " +
+                "from the school system using the existing browser login. An empty successful list means nothing published; " +
+                "a failed refresh preserves the last cache.",
+            {
+                bool("sync", "Refresh from the school system first; default false (offline cache)")
+                string("term", "Six-digit term code, e.g. 202601. Default current term")
+            },
+        ) {
+            override suspend fun invoke(args: JsonObject, call: CallContext): ToolResult {
+                val term = args.str("term")?.trim()?.takeIf { it.isNotEmpty() } ?: termIdFor(LocalDate.now())
+                if (!term.matches(Regex("[0-9]{6}"))) throw InvalidArgsException("term must look like 202601")
+                if (args.bool("sync") == true) {
+                    when (val fetched = sync.syncExams(term)) {
+                        TimetableSync.ExamFetch.NotLoggedIn -> return ToolResult.error("not_logged_in", "Log in with timetable_login, then retry timetable_exams(sync=true). The old cache is unchanged.")
+                        is TimetableSync.ExamFetch.Failed -> return ToolResult.error("exam_sync_failed", fetched.detail + ". The old cache is unchanged.")
+                        is TimetableSync.ExamFetch.Ok -> Unit
+                    }
+                }
+                val snapshot = withContext(Dispatchers.IO) { store.exams() }
+                if (snapshot.fetchedAt.isBlank() || snapshot.term != term) return ToolResult.error("no_exam_cache", "No saved exam list for term $term. Call timetable_exams(sync=true).")
+                val text = if (snapshot.items.isEmpty()) "No exams published for this term."
+                    else io.github.lazy.dsh.core.timetable.examsText(snapshot.items)
+                return ToolResult.text("Exams: ${snapshot.term}; last synced ${snapshot.fetchedAt}.\n$text")
+            }
+        },
+
         object : Tool(
             "timetable_sync", ToolGroup.Timetable, Risk.read, false,
             "Sync the user's 济宁医学院 timetable into this phone, replacing the cache. Reads the list endpoint in the built-in browser, " +
@@ -79,28 +103,33 @@ class TimetableTools @Inject constructor(
             override suspend fun invoke(args: JsonObject, call: CallContext): ToolResult {
                 val term = args.str("term")?.trim()?.takeIf { it.isNotEmpty() } ?: termIdFor(LocalDate.now())
                 if (!term.matches(Regex("\\d{6}"))) throw InvalidArgsException("term must look like 202601")
-                val body = browser.pageText(listUrl(term))
-
-                val courses = try {
-                    TimetableParser.parse(body)
-                } catch (e: NotTimetableJson) {
-                    // The login page as *text*: the form's field names are not in innerText, its labels are.
-                    val login = LOGIN_MARKERS.any { body.contains(it) }
-                    return if (login) ToolResult.error(
+                return when (val fetched = sync.fetch(term)) {
+                    is TimetableSync.Fetch.Ok -> {
+                        val saved = stored(fetched.courses, term, "Synced")
+                        val examStatus = when (val exams = sync.syncExams(term)) {
+                            is TimetableSync.ExamFetch.Ok -> "Exams synced: ${exams.exams.size}. Use timetable_exams for exact times and rooms."
+                            TimetableSync.ExamFetch.NotLoggedIn -> "Exam refresh requires login; previous exam cache kept."
+                            is TimetableSync.ExamFetch.Failed -> "Exam refresh failed; previous exam cache kept: ${exams.detail}"
+                        }
+                        // Keep the existing timetable result shape; the second part reports partial success explicitly.
+                        saved.appendText(examStatus)
+                    }
+                    is TimetableSync.Fetch.NotLoggedIn -> ToolResult.error(
                         "not_logged_in",
                         "The school system answered with its login page, so the built-in browser has no valid session. " +
-                            "Log in once there (browser_open $BASE/ , browser_type the student number and password, then the 4-digit " +
+                            "Log in once there (browser_open ${TimetableSync.BASE}/ , browser_type the student number and password, then the 4-digit " +
                             "captcha read from browser_screenshot), then call timetable_sync again. A session in another browser does not count.",
-                    ) else ToolResult.error(
-                        "not_timetable",
-                        "The endpoint did not return the timetable JSON. First 300 characters: ${e.snippet.replace("\n", " ")}",
                     )
+                    is TimetableSync.Fetch.NotTimetable -> ToolResult.error(
+                        "not_timetable",
+                        "The endpoint did not return the timetable JSON. First 300 characters: ${fetched.snippet.replace("\n", " ")}",
+                    )
+                    is TimetableSync.Fetch.Empty -> ToolResult.error(
+                        "empty",
+                        "The system returned a timetable with no classes for term $term. Check the term code (202601 is the autumn term).",
+                    )
+                    is TimetableSync.Fetch.Failed -> ToolResult.error("sync_failed", fetched.detail)
                 }
-                if (courses.isEmpty()) return ToolResult.error(
-                    "empty",
-                    "The system returned a timetable with no classes for term $term. Check the term code (202601 is the autumn term).",
-                )
-                return stored(courses, term, "Synced")
             }
         },
 
@@ -130,7 +159,7 @@ class TimetableTools @Inject constructor(
 
                 // Step 1: open the login page and hand the captcha image to the user.
                 if (captcha == null) {
-                    val text = browser.pageText("$BASE/")
+                    val text = browser.pageText("${TimetableSync.BASE}/")
                     if (text.contains("注销") || text.contains("信息查询")) {
                         return ToolResult.text("Already logged in — call timetable_sync. (No captcha was needed.)")
                     }
@@ -156,7 +185,7 @@ class TimetableTools @Inject constructor(
 
                 var r = browser.eval(fill)
                 if (r == "no_form") {
-                    browser.pageText("$BASE/")
+                    browser.pageText("${TimetableSync.BASE}/")
                     r = browser.eval(fill)
                 }
                 if (r == "no_form") return ToolResult.error(
@@ -413,19 +442,17 @@ class TimetableTools @Inject constructor(
 
     /** Saves [courses] as the cache and reports what it holds (shared by sync and import). */
     private fun stored(courses: List<Course>, term: String, verb: String): ToolResult {
-        val monday = firstMondayOf(courses) ?: return ToolResult.error(
-            "no_dates",
-            "The timetable has no usable dates (pkrq), so week 1 cannot be placed.",
-        )
-        store.save(courses, term, monday.toString(), Instant.now().toString())
-        reminders.resync()
+        val saved = when (val result = sync.save(courses, term)) {
+            is TimetableSync.Save.NoDates -> return ToolResult.error(
+                "no_dates",
+                "The timetable has no usable dates (pkrq), so week 1 cannot be placed.",
+            )
+            is TimetableSync.Save.Ok -> result
+        }
         val dates = courses.map { it.date }.filter { it.isNotEmpty() }.sorted()
-        val names = courses.map { it.course }.distinct().size
-        val today = LocalDate.now()
-        val week = store.term().weekOf(today)
         return ToolResult.text(
-            "$verb term $term: ${courses.size} classes, $names courses, ${dates.firstOrNull()} → ${dates.lastOrNull()}. " +
-                "Week 1 started $monday" + (if (week > 0) "; today $today is week $week" else "") +
+            "$verb term $term: ${saved.classes} classes, ${saved.courses} courses, ${dates.firstOrNull()} → ${dates.lastOrNull()}. " +
+                "Week 1 started ${saved.monday}" + (if (saved.todayWeek > 0) "; today ${LocalDate.now()} is week ${saved.todayWeek}" else "") +
                 ". 作息: ${store.season().id}. Ask timetable_today or timetable_week for the details.",
         )
     }
@@ -440,14 +467,6 @@ class TimetableTools @Inject constructor(
     }
 
     private companion object {
-        const val BASE = "http://210.44.16.13"
-
-        /**
-         * What the login page says in plain text. A timetable JSON never contains these, so they are
-         * safe to look for; the form's own field names (verifycode) are not in innerText.
-         */
-        val LOGIN_MARKERS = listOf("立即登录", "忘记密码", "验证码", "统一认证", "教务管理系统", "verifycode")
-
         /** Draws the captcha <img> into a canvas and returns the PNG as base64 (same origin, so no taint). */
         const val CAPTCHA_JS = """
 (()=>{

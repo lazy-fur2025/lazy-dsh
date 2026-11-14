@@ -1,23 +1,121 @@
 <resources>
-    <string-array name="hero_greet_morning">
-        <item>Good morning</item>
-        <item>Morning — sleep well?</item>
-        <item>A new day, no rush</item>
+    <!-- Weekday headlines. One pool per day so the page knows what day it is. -->
+    <string-array name="hero_mon">
+        <item>Monday — let\'s go!</item>
+        <item>New week, start with the hardest thing</item>
+        <item>Monday. Just get the engine running</item>
+        <item>Pick three things today and you win</item>
+        <item>First day of the week; a slow start still counts</item>
     </string-array>
-    <string-array name="hero_greet_day">
-        <item>Good afternoon</item>
-        <item>Here again</item>
-        <item>What should we get done today?</item>
+    <string-array name="hero_tue">
+        <item>Tuesday — the rhythm is back</item>
+        <item>We started yesterday; keep going</item>
+        <item>No rush on Tuesday, one thing at a time</item>
+        <item>Long week ahead, don\'t sprint yet</item>
+        <item>A good day to push the hard thing forward</item>
     </string-array>
-    <string-array name="hero_greet_evening">
-        <item>Good evening</item>
-        <item>Done for the day?</item>
-        <item>How did today go?</item>
+    <string-array name="hero_wed">
+        <item>Wednesday — halfway there</item>
+        <item>Halfway up the hill; catch your breath</item>
+        <item>Wednesday is the tired day. Don\'t force it</item>
+        <item>Two more days; the weekend is ahead</item>
+        <item>Half done — give yourself some credit</item>
     </string-array>
-    <string-array name="hero_greet_night">
-        <item>It\'s late</item>
-        <item>Still awake?</item>
-        <item>Don\'t stay up too long</item>
+    <string-array name="hero_thu">
+        <item>Thursday — the finish is in sight</item>
+        <item>Friday tomorrow. Hold steady</item>
+        <item>Finish today, take it easy tomorrow</item>
+        <item>A good day to wrap up, or slack off a little</item>
+        <item>One more push; almost ashore</item>
+    </string-array>
+    <string-array name="hero_fri">
+        <item>Friday — the last day</item>
+        <item>Friday. Wrap up what\'s on your desk</item>
+        <item>After work today, the world is yours</item>
+        <item>Friday. Worth looking forward to</item>
+        <item>Last day of the week; leave no loose ends</item>
+    </string-array>
+    <string-array name="hero_fri_evening">
+        <item>Friday night — isn\'t it exciting?</item>
+        <item>Friday night. Finally, a deep breath</item>
+        <item>Off work. No work talk tonight</item>
+        <item>Friday evening, even the wind is free</item>
+        <item>The week is over. Tonight is yours</item>
+    </string-array>
+
+    <string-array name="hero_sat">
+        <item>Happy Saturday — today is yours</item>
+        <item>Finally the weekend. What\'s the plan?</item>
+        <item>It\'s Saturday. Slowing down is fine</item>
+        <item>Weekends aren\'t for rushing, they\'re for enjoying</item>
+        <item>No clock to punch today. Do something you like</item>
+        <item>Saturday. Sleep in as long as you like</item>
+    </string-array>
+    <string-array name="hero_sun">
+        <item>Happy Sunday — give the time back to yourself</item>
+        <item>Sunday. Wrap it up gently; tomorrow can wait</item>
+        <item>No clock to punch today. Do something you like</item>
+        <item>A day with nothing scheduled</item>
+        <item>Last day of the break. Be kind to yourself</item>
+        <item>Sunday. Slowing down is fine</item>
+    </string-array>
+
+    <!-- Festivals (China). Make-up workdays are ignored: Saturday and Sunday always read as weekend. -->
+    <string-array name="hero_holiday_new_year">
+        <item>Happy New Year — let\'s do this year together</item>
+        <item>A new year. Take it slow</item>
+        <item>New Year\'s Day — start with a day off</item>
+    </string-array>
+    <string-array name="hero_holiday_new_year_eve">
+        <item>You made it through this year. See you next year</item>
+        <item>New Year\'s Eve — say goodbye to the old year</item>
+        <item>Last night of the year. Leave the regrets behind</item>
+    </string-array>
+    <string-array name="hero_holiday_spring_festival">
+        <item>Happy Spring Festival — eat well, sleep well</item>
+        <item>Happy lunar new year. May the year go smoothly</item>
+        <item>Spring Festival — don\'t forget the red envelopes</item>
+    </string-array>
+    <string-array name="hero_holiday_qingming">
+        <item>Peaceful Qingming. Go and see the spring</item>
+        <item>Qingming — the people we miss stay with us</item>
+        <item>A day to take it slow</item>
+    </string-array>
+    <string-array name="hero_holiday_labor_day">
+        <item>Happy Labor Day — no working today</item>
+        <item>May Day — rest for a few days</item>
+        <item>Labor Day. Put the work down first</item>
+    </string-array>
+    <string-array name="hero_holiday_dragon_boat">
+        <item>Peaceful Dragon Boat Festival. Easy on the zongzi</item>
+        <item>Happy Dragon Boat — watch the races if you can</item>
+        <item>The leaves smell of zongzi. Take it slow today</item>
+    </string-array>
+    <string-array name="hero_holiday_mid_autumn">
+        <item>Happy Mid-Autumn — the moon and home are both here</item>
+        <item>Mid-Autumn. Have a mooncake</item>
+        <item>The moon is full; so should the family be</item>
+    </string-array>
+    <string-array name="hero_holiday_national_day">
+        <item>Happy National Day — take a real break</item>
+        <item>Seven days off. Go wherever you want</item>
+        <item>National Day. Give yourself back to life</item>
+    </string-array>
+
+    <!-- Time-of-day sublines, shown under whichever headline the date chose. -->
+    <string-array name="hero_earlybird">
+        <item>Up early — this will be a long day</item>
+        <item>Early bird. Water first</item>
+        <item>Just daylight. Do the most important thing first</item>
+        <item>Awake this early? Good form</item>
+        <item>The morning is yours. Take it slow</item>
+    </string-array>
+    <string-array name="hero_nightowl">
+        <item>The night owl is back</item>
+        <item>Still awake? I\'m here</item>
+        <item>It\'s late. Finish this and sleep</item>
+        <item>Staying up is fine — just remember tomorrow</item>
+        <item>Everyone\'s asleep. It\'s just us</item>
     </string-array>
     <string-array name="hero_care">
         <item>Just say what you need</item>

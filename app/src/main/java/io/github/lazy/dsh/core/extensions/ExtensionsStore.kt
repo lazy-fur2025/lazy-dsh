@@ -248,7 +248,7 @@ class InstallFlow(private val store: ExtensionsStore, private val scope: Corouti
                 val info = store.client.inspect(input.spec)
                 when {
                     info.error != null -> State.Failed(input, info.error, info)
-                    !info.bundle -> State.Failed(input, UserError("not-bundle"), info)
+                    info.bundle == false -> State.Failed(input, UserError("not-bundle"), info)
                     else -> State.Confirm(input, info)
                 }
             } catch (e: ExtException) {

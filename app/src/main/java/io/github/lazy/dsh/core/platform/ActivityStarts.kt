@@ -25,14 +25,20 @@ object ActivityStarts {
         ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle() else null
 
     fun start(context: Context, intent: Intent) {
+        tryStart(context, intent)
+    }
+
+    /** Same as [start], reporting whether either start path was accepted (for tool results). */
+    fun tryStart(context: Context, intent: Intent): Boolean {
         val i = Intent(intent).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         val sent = runCatching {
             PendingIntent.getActivity(context, REQUEST, i, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
                 .send(context, 0, null, null, null, null, sendOptions())
         }
-        if (sent.isFailure) {
-            Log.w("ActivityStarts", "PendingIntent start refused; trying startActivity", sent.exceptionOrNull())
-            runCatching { context.startActivity(i) }.onFailure { Log.w("ActivityStarts", "startActivity refused", it) }
-        }
+        if (sent.isSuccess) return true
+        Log.w("ActivityStarts", "PendingIntent start refused; trying startActivity", sent.exceptionOrNull())
+        return runCatching { context.startActivity(i) }
+            .onFailure { Log.w("ActivityStarts", "startActivity refused", it) }
+            .isSuccess
     }
 }

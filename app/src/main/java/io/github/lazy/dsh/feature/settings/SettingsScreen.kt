@@ -450,6 +450,7 @@ internal fun groupLabel(g: ToolGroup) = when (g) {
     ToolGroup.Browser -> R.string.grp_browser to R.string.grp_browser_desc
     ToolGroup.Rules -> R.string.grp_rules to R.string.grp_rules_desc
     ToolGroup.Timetable -> R.string.grp_timetable to R.string.grp_timetable_desc
+    ToolGroup.Interactive -> R.string.grp_interactive to R.string.grp_interactive_desc
 }
 
 @Composable

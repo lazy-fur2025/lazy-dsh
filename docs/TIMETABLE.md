@@ -65,6 +65,7 @@ code honest, and reuses the site's own encryption.
 |---|---|
 | `courses.json` | the parsed classes (`Course`: course, type, teacher, room, weekday, periods, week, date, klass, note) |
 | `state.json` | `term`, `firstMonday`, `season`, `fetchedAt` |
+| `exams.json` | independent exam snapshot: `term`, `fetchedAt`, `items` |
 | `timetable.ics` | written by `timetable_export` into `Download/课表.ics` |
 
 ## 作息 (clock times)
@@ -107,11 +108,57 @@ tokens per class, and they fire with the phone asleep.
 The notification says what a person needs at a glance: `15 分钟后上课 · UI设计` /
 `第3-4节 · 09:50-11:20 · B312/316教室 · 徐琦`.
 
+## 课表页面
+
+The same cache has a screen, opened from the sidebar's 课表 entry
+(`feature/timetable/TimetableScreen.kt`, route `TimetableRoute`):
+
+- Five 90-minute rows (the school has no periods 5 or 10) × seven day columns. The current week
+  opens with today highlighted and scrolled into view; the arrows change weeks and 本周 comes back.
+  The grid scrolls horizontally by whole columns, with one spare column so the last day is never cut.
+- A tap on a class opens its details: 时间 / 教室 / 教师 / 班级 / 内容.
+- 同步 (top bar) calls `TimetableSync`, the same fetch-and-save the `timetable_sync` tool uses. If the
+  school session expired, the dialog's 让助手帮我登录 drops “帮我登录教务系统，然后同步这学期的课表”
+  into the conversation and returns home.
+- 设置: 冬/夏作息, class reminders with a lead time, and 导出到日历, which writes an `.ics` into the
+  cache and opens the system share sheet (no All-files permission).
+- The page never keeps a second copy of the data: it reads `TimetableStore` on entry and after every
+  change.
+
 ## Tools
+
+### 考试安排
+
+The timetable screen has separate **Timetable / Exams** tabs. Exams come from the school's own
+`xsksap!ksapList.action` menu, backed by:
+
+```
+GET /new/xsksap!getDataList.action?xnxqdm=<term>&page=1&rows=1000
+```
+
+`ExamParser` reads `ksrcdm`, `kcmc`, `ksrq`, `kssj`, `kscdmc`, `xqmc`, `zwh`, `kslbmc`,
+`ksaplxmc`, `ksxs` and `bz`. It sorts by date and start time, with unpublished dates last.
+Room separators are normalized to `/`; unpublished room/seat fields are shown explicitly. Exam
+clock times are independent of course periods and the winter/summer schedule: an exam published
+as 19:00–21:00 stays two hours, not the 19:00–20:30 evening lesson.
+
+`TimetableSync.syncExams` uses the same built-in browser login, but replaces only `exams.json`.
+A complete, successful `{total:0,rows:[]}` clears old exams; login pages, malformed responses,
+inconsistent/missing counts, truncated lists and network failures leave the previous cache intact.
+Replacement uses a temporary file in the same directory and an atomic move.
+
+The Exams tab offers its own refresh, last-sync/term information, old-term warning, unpublished
+fields and login/failure states. The timetable refresh also requests exams; partial failure is
+reported separately rather than treating a saved course list as a failed timetable sync.
+`timetable_sync` refreshes exams after fetching courses, and `timetable_exams` reads the saved
+snapshot offline by default (`sync=true` refreshes; `term` selects the requested term).
+
+### Tool Reference
 
 | tool | risk | what it does |
 |---|---|---|
 | `timetable_sync` | read | fetch the term into the cache through the agent browser |
+| `timetable_exams` | read | exact exam dates/times, campus, room and seat; offline by default, `sync=true` refreshes |
 | `timetable_login` | write | log in with the account/password file; returns the captcha image |
 | `timetable_import` | write | import a JSON saved elsewhere (list endpoint or `courses.json`) |
 | `timetable_today` | read | one day with clock times (`date` optional) |
@@ -128,4 +175,8 @@ A daily briefing is a normal rule: trigger `Time(at = 07:00, days = 1..5)`, prom
 
 `app/src/test/java/io/github/lazy/dsh/core/timetable/TimetableTest.kt` covers parsing (including the
 login page), period codes, week maths, the term code, both 作息 tables, the `.ics` output (clock times,
-stable UIDs, 75-octet folding) and the day text.
+stable UIDs, 75-octet folding) and the day text. `TimetableGridTest` covers the screen's grouping: the
+five rows, one class in exactly one cell, and seven days starting on Monday.
+`ExamsTest` covers actual endpoint fields, two-hour clock times, pending fields, ordering and
+invalid/incomplete envelopes. `ExamStoreTest` covers cache recreation, failed-parse preservation
+and clearing a prior snapshot after a successful empty response.

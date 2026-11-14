@@ -165,6 +165,15 @@
             </intent-filter>
         </activity>
 
+        <!-- AI-drawn interactive scene: one sandboxed WebView, its own activity so a tool call can
+             open it without touching the conversation's back stack. -->
+        <activity
+            android:name=".feature.interactive.InteractiveActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.Dsh"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- Notification trampoline for automations Android refused to start in the background. -->
         <activity
             android:name=".feature.deferred.DeferredRunActivity"

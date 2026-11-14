@@ -268,7 +268,8 @@ data class InspectResult(
     /** What the user typed, normalized for display (`owner/repo`, the file name …). */
     val display: String? = null,
     val description: LocalizedText? = null,
-    val bundle: Boolean = true,
+    /** True for a bundle, false when the engine knows it is not, null when a remote tarball can only be judged after download. */
+    val bundle: Boolean? = null,
     val compatible: Boolean = true,
     /** Unmet requirements, e.g. `{"engines.dsh": ">=0.2.2"}` (shape kept loose). */
     val incompatible: JsonElement? = null,

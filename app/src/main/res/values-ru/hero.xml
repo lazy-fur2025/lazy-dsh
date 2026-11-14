@@ -1,30 +1,128 @@
 <resources>
-    <string-array name="hero_greet_morning">
-        <item>Доброе утро</item>
-        <item>Утро. Хорошо спалось?</item>
-        <item>Новый день — без спешки</item>
+    <!-- Weekday headlines. One pool per day so the page knows what day it is. -->
+    <string-array name="hero_mon">
+        <item>Понедельник — вперёд!</item>
+        <item>Новая неделя: начни с самого трудного</item>
+        <item>Понедельник. Просто заведи мотор</item>
+        <item>Выбери три дела на сегодня — и победа</item>
+        <item>Первый день недели; медленный старт тоже старт</item>
     </string-array>
-    <string-array name="hero_greet_day">
-        <item>Добрый день</item>
-        <item>Снова здесь</item>
-        <item>Что сделаем сегодня?</item>
+    <string-array name="hero_tue">
+        <item>Вторник — ритм вернулся</item>
+        <item>Вчера начали, сегодня продолжаем</item>
+        <item>Вторник не спешит: по одному делу</item>
+        <item>Неделя длинная, не беги спринт</item>
+        <item>Хороший день, чтобы сдвинуть трудное с места</item>
     </string-array>
-    <string-array name="hero_greet_evening">
-        <item>Добрый вечер</item>
-        <item>Уже освободились?</item>
-        <item>Как прошёл день?</item>
+    <string-array name="hero_wed">
+        <item>Среда — половина пути</item>
+        <item>Половина горы: передохни и иди дальше</item>
+        <item>Среда — самый усталый день. Не геройствуй</item>
+        <item>Ещё два дня, выходные впереди</item>
+        <item>Половина сделана — похвали себя</item>
     </string-array>
-    <string-array name="hero_greet_night">
-        <item>Уже поздно</item>
-        <item>Ещё не спите?</item>
-        <item>Не засиживайтесь допоздна</item>
+    <string-array name="hero_thu">
+        <item>Четверг — финиш уже виден</item>
+        <item>Завтра пятница. Держи ритм</item>
+        <item>Закончи сегодня — завтра будет легче</item>
+        <item>Четверг хорош для завершения и для лёгкой лени</item>
+        <item>Ещё немного — и берег близко</item>
+    </string-array>
+    <string-array name="hero_fri">
+        <item>Пятница — последний день</item>
+        <item>Пятница. Закрой то, что на столе</item>
+        <item>Сегодня после работы мир твой</item>
+        <item>Пятница. Есть чего ждать</item>
+        <item>Последний день недели — без хвостов</item>
+    </string-array>
+    <string-array name="hero_fri_evening">
+        <item>Пятничный вечер — разве не здорово?</item>
+        <item>Пятница, вечер. Наконец можно выдохнуть</item>
+        <item>Работа кончилась. Сегодня без разговоров о делах</item>
+        <item>Пятничный вечер — даже ветер свободный</item>
+        <item>Неделя закончилась. Этот вечер твой</item>
+    </string-array>
+
+    <string-array name="hero_sat">
+        <item>Хорошей субботы — сегодняшний день твой</item>
+        <item>Наконец выходные. Какие планы?</item>
+        <item>Суббота. Можно никуда не спешить</item>
+        <item>Выходные не для гонки, а для радости</item>
+        <item>Сегодня не надо на работу. Делай любимое</item>
+        <item>Суббота. Спи сколько хочешь</item>
+    </string-array>
+    <string-array name="hero_sun">
+        <item>Хорошего воскресенья — верни время себе</item>
+        <item>Воскресенье. Аккуратно заверши — завтра подождёт</item>
+        <item>Сегодня не надо на работу. Делай любимое</item>
+        <item>День без планов</item>
+        <item>Последний день отдыха. Пожалей себя</item>
+        <item>Воскресенье. Можно не спешить</item>
+    </string-array>
+
+    <!-- Festivals (China). Make-up workdays are ignored: Saturday and Sunday always read as weekend. -->
+    <string-array name="hero_holiday_new_year">
+        <item>С Новым годом — проживём его вместе</item>
+        <item>Новый год. Не спеши</item>
+        <item>Первое января — начни с отдыха</item>
+    </string-array>
+    <string-array name="hero_holiday_new_year_eve">
+        <item>Этот год был непростым. До встречи в следующем</item>
+        <item>Новогодняя ночь — попрощайся со старым годом</item>
+        <item>Последний вечер года. Оставь сожаления в нём</item>
+    </string-array>
+    <string-array name="hero_holiday_spring_festival">
+        <item>С Новым годом по лунному календарю — ешь и спи хорошо</item>
+        <item>С праздником весны! Пусть год будет гладким</item>
+        <item>Весенний праздник — не забудь про красные конверты</item>
+    </string-array>
+    <string-array name="hero_holiday_qingming">
+        <item>Светлой памяти в Цинмин. Посмотри на весну</item>
+        <item>Цинмин — те, кого мы любим, остаются с нами</item>
+        <item>Сегодня можно не спешить</item>
+    </string-array>
+    <string-array name="hero_holiday_labor_day">
+        <item>С Днём труда — сегодня работать нельзя</item>
+        <item>Первомай — отдохни несколько дней</item>
+        <item>День труда. Сначала отложи работу</item>
+    </string-array>
+    <string-array name="hero_holiday_dragon_boat">
+        <item>С праздником Дуаньу. С цзунцзы — поаккуратнее</item>
+        <item>Дуаньу — посмотри на гонки драконов</item>
+        <item>Пахнет цзунцзы. Сегодня помедленнее</item>
+    </string-array>
+    <string-array name="hero_holiday_mid_autumn">
+        <item>С праздником середины осени — луна и дом рядом</item>
+        <item>Чжунцю. Съешь лунный пряник</item>
+        <item>Луна полная — и семья должна быть вместе</item>
+    </string-array>
+    <string-array name="hero_holiday_national_day">
+        <item>С Днём образования КНР — отдохни по-настоящему</item>
+        <item>Семь дней выходных. Куда хочешь — туда и езжай</item>
+        <item>Национальный праздник. Верни себя жизни</item>
+    </string-array>
+
+    <!-- Time-of-day sublines, shown under whichever headline the date chose. -->
+    <string-array name="hero_earlybird">
+        <item>Встал рано — день будет длинным</item>
+        <item>Ранняя птица. Сначала воды</item>
+        <item>Только рассвет. Сделай самое важное первым</item>
+        <item>Проснулся так рано? Хорошая форма</item>
+        <item>Утро твоё. Не спеши</item>
+    </string-array>
+    <string-array name="hero_nightowl">
+        <item>Ночная сова снова здесь</item>
+        <item>Ещё не спишь? Я рядом</item>
+        <item>Поздно. Сделай это — и спать</item>
+        <item>Не спать можно, но помни про завтра</item>
+        <item>Все спят. Остались только мы</item>
     </string-array>
     <string-array name="hero_care">
-        <item>Просто скажите, что нужно</item>
-        <item>Одна фраза — остальное сделаю я</item>
-        <item>Чем мне заняться для вас?</item>
-        <item>Выпейте воды, спешить некуда</item>
-        <item>Расскажите, что хотите закончить</item>
-        <item>Устали — отдохните, я рядом</item>
+        <item>Просто скажи, что нужно</item>
+        <item>Одно предложение — остальное сделаю я</item>
+        <item>Что мне взять на себя?</item>
+        <item>Попей воды, не торопись</item>
+        <item>Скажи, что хочешь закончить</item>
+        <item>Устал — отдохни, я здесь</item>
     </string-array>
 </resources>

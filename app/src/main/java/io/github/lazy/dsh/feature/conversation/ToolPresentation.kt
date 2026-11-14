@@ -38,6 +38,7 @@ enum class Activity(@StringRes val live: Int, @StringRes val done: Int, val coun
     Clipboard(R.string.act_clip_live, R.string.act_clip_done),
     Media(R.string.act_media_live, R.string.act_media_done),
     Image(R.string.act_image_live, R.string.act_image_done),
+    Interactive(R.string.act_interactive_live, R.string.act_interactive_done),
     Rules(R.string.act_rules_live, R.string.act_rules_done),
     Other(R.string.act_other_live, R.string.act_other_done),
 }
@@ -46,7 +47,7 @@ enum class Activity(@StringRes val live: Int, @StringRes val done: Int, val coun
 data class ToolInfo(@DrawableRes val icon: Int, @StringRes val title: Int, val activity: Activity, val body: BodyKind = BodyKind.InOut)
 
 /** Which expanded-body renderer a tool uses. */
-enum class BodyKind { InOut, Terminal, Read, Search, Web, Todo, Screen, Image, Gesture, Text, Question }
+enum class BodyKind { InOut, Terminal, Read, Search, Web, Todo, Screen, Image, Gesture, Text, Question, Interactive }
 
 object ToolPresentation {
     fun info(name: String): ToolInfo = when (name) {
@@ -86,9 +87,10 @@ object ToolPresentation {
         "clipboard_get", "clipboard_set" -> ToolInfo(R.drawable.dsw_copy_outline, titleOf(name), Activity.Clipboard, BodyKind.Text)
         "media_control" -> ToolInfo(R.drawable.dsw_play_outline, R.string.tool_media, Activity.Media, BodyKind.Gesture)
         "image_generate" -> ToolInfo(R.drawable.dsw_sparkle, R.string.tool_image_generate, Activity.Image, BodyKind.Image)
+        "interactive_view" -> ToolInfo(R.drawable.dsw_sparkle, R.string.tool_interactive, Activity.Interactive, BodyKind.Interactive)
         "rule_create", "rule_list", "rule_update", "rule_delete" -> ToolInfo(R.drawable.dsw_clock_outline, titleOf(name), Activity.Rules, BodyKind.InOut)
         "timetable_login" -> ToolInfo(R.drawable.dsw_globe_outline, titleOf(name), Activity.Browser, BodyKind.Image)
-        "timetable_sync", "timetable_import", "timetable_today", "timetable_week", "timetable_next", "timetable_season", "timetable_export", "timetable_remind" ->
+        "timetable_exams", "timetable_sync", "timetable_import", "timetable_today", "timetable_week", "timetable_next", "timetable_season", "timetable_export", "timetable_remind" ->
             ToolInfo(R.drawable.dsw_clock_outline, titleOf(name), Activity.Other, BodyKind.Text)
         "hand_to_user" -> ToolInfo(R.drawable.dsw_user_outline, R.string.tool_hand_to_user, Activity.Other, BodyKind.Text)
         "schedule_create", "schedule_update", "schedule_delete", "schedule_list" -> ToolInfo(R.drawable.dsw_clock_outline, R.string.tool_schedule, Activity.Rules, BodyKind.InOut)
@@ -147,7 +149,7 @@ object ToolPresentation {
         "rule_update" -> R.string.tool_rule_update
         "rule_delete" -> R.string.tool_rule_delete
         "timetable_login", "timetable_sync", "timetable_import", "timetable_today", "timetable_week",
-        "timetable_next", "timetable_season", "timetable_export", "timetable_remind" -> R.string.tool_timetable
+        "timetable_exams", "timetable_next", "timetable_season", "timetable_export", "timetable_remind" -> R.string.tool_timetable
         else -> R.string.tool_generic
     }
 
@@ -188,6 +190,7 @@ object ToolPresentation {
             "sound_mode" -> a.str("mode")
             "media_control" -> a.str("action")
             "image_generate" -> a.str("prompt")?.let { "“${it.take(60)}”" }
+            "interactive_view" -> a.str("title") ?: context.getString(R.string.tool_interactive)
             "contacts_search", "app_list", "file_search" -> a.str("query")
             "file_list", "file_stat", "file_read", "file_write", "file_mkdir", "file_delete" -> a.str("path") ?: a.str("paths")
             "file_move" -> listOfNotNull(a.str("path") ?: a["paths"]?.toString(), a.str("dest")).joinToString(" → ")

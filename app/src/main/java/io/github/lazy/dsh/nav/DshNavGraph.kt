@@ -39,13 +39,19 @@ import io.github.lazy.dsh.feature.settings.shellAccessOf
  */
 fun NavGraphBuilder.dshGraph(nav: NavHostController, home: () -> HomeViewModel) {
     val open: (Route) -> Unit = { nav.navigate(it) }
-    composable<HomeRoute> { HomeScreen(home(), onSettings = { nav.openSettings(it) }, onAutomation = { nav.navigate(AutomationRoute) }, onFiles = { nav.navigate(FilesRoute) }) }
+    composable<HomeRoute> { HomeScreen(home(), onSettings = { nav.openSettings(it) }, onAutomation = { nav.navigate(AutomationRoute) }, onFiles = { nav.navigate(FilesRoute) }, onTimetable = { nav.navigate(TimetableRoute) }) }
     composable<OnboardingRoute> { e -> OnboardingPage(nav, e) }
     composable<EnhanceRoute> { e -> EnhanceStep(onDone = { nav.up(e) }) }
     composable<AutomationRoute> { e ->
         AutomationScreen(onBack = { nav.up(e) }, onNew = { prefill -> home().newSession(prefill); nav.toHome() }, onOpenRule = { open(RuleRoute(it.toString())) })
     }
     composable<FilesRoute> { e -> FilesScreen(onBack = { nav.up(e) }) }
+    composable<TimetableRoute> { e ->
+        io.github.lazy.dsh.feature.timetable.TimetableScreen(
+            onBack = { nav.up(e) },
+            onAskAssistant = { text -> home().prefill.value = text; nav.toHome() },
+        )
+    }
     composable<RuleRoute> { e -> RuleDetailScreen(onBack = { nav.up(e) }, onOpenSession = { sid -> home().open(sid); nav.toHome() }) }
     navigation<SettingsGraph>(startDestination = SettingsRoute) {
         composable<SettingsRoute> { e -> InSettings(nav, e) { SettingsIndexScreen(onBack = { nav.up(e) }, open = open) } }

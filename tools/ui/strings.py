@@ -1,5 +1,5 @@
 """Generates values/strings.xml (zh, primary) and values-en/strings.xml from one table."""
-import sys, os
+import sys, os, re
 out = sys.argv[1]
 S = [
 ("app_name", "DSH", "DSH"),
@@ -521,9 +521,72 @@ S = [
 ("onb_third_party", "使用其他模型服务（OpenAI 兼容）", "Use another model provider (OpenAI-compatible)"),
 ("web_search_needs_key", "需要 DeepSeek API Key", "Needs a DeepSeek API key"),
 ("web_search_off_desc", "当前选用第三方模型。联网搜索由 DeepSeek 提供，需要 DeepSeek API Key；网页读取不受影响。", "A third-party model is selected. Web search is provided by DeepSeek and needs a DeepSeek API key; reading web pages still works."),
+# timetable (课表 screen; the tools' own text stays in English in TimetableTools)
+("timetable", "课表", "Timetable"),
+("tt_week_n", "第 %1$d 周", "Week %1$d"),
+("tt_this_week", "本周", "This week"),
+("tt_prev_week", "上一周", "Previous week"),
+("tt_next_week", "下一周", "Next week"),
+("tt_empty_week", "这周没课", "No classes this week"),
+("tt_sync", "同步课表", "Sync timetable"),
+("tt_sync_now", "立即同步", "Sync now"),
+("tt_syncing", "正在同步…", "Syncing…"),
+("tt_sync_done", "已同步 %1$d 节课", "Synced %1$d classes"),
+("tt_sync_network", "同步失败：%1$s", "Sync failed: %1$s"),
+("tt_sync_bad", "教务系统没有返回课表：%1$s", "The school system did not return a timetable: %1$s"),
+("tt_sync_empty", "这个学期还没有排课", "No classes are scheduled for this term"),
+("tt_sync_no_dates", "课表里没有日期，无法确定第一周", "The timetable has no dates, so week 1 cannot be placed"),
+("tt_sync_failed", "同步失败：%1$s", "Sync failed: %1$s"),
+("tt_no_data", "还没有课表", "No timetable yet"),
+("tt_no_data_hint", "从教务系统同步一次，之后离线也能看；登录失效时可以让助手帮你登录。", "Sync once from the school system, then it works offline. If the session expired, ask the assistant to sign in."),
+("tt_login_title", "需要登录教务系统", "Sign in to the school system"),
+("tt_login_body", "教务系统的登录已失效。让助手在对话里帮你登录，登录完成后再回来点「同步」。", "The school system session has expired. Ask the assistant to sign you in, then come back and sync."),
+("tt_ask_login", "让助手帮我登录", "Ask the assistant to sign in"),
+("tt_login_prefill", "帮我登录教务系统，然后同步这学期的课表。", "Sign me in to the school system, then sync this term's timetable."),
+("tt_settings", "课表设置", "Timetable settings"),
+("tt_season", "作息", "Class times"),
+("tt_season_winter", "冬季", "Winter"),
+("tt_season_summer", "夏季", "Summer"),
+("tt_season_desc", "夏季下午的课推迟 30 分钟", "In summer, afternoon classes start 30 minutes later"),
+("tt_remind", "课前提醒", "Class reminders"),
+("tt_remind_desc", "本地闹钟，不调用模型", "Local alarms; no model calls"),
+("tt_lead", "提前多久", "Remind me"),
+("tt_lead_min", "%1$d 分钟", "%1$d min"),
+("tt_lead_zero", "上课时", "At start"),
+("tt_notifications_off", "通知权限未开启，提醒不会显示", "Notifications are off, so reminders will not appear"),
+("tt_need_notifications", "需要通知权限", "Notifications needed"),
+("tt_need_notifications_body", "开启通知后，课前提醒才会出现在通知栏。也可以在系统设置里打开 DSH 的通知。", "Reminders appear in the notification shade only when notifications are allowed. You can also turn them on in system settings."),
+("tt_open_settings", "去开启", "Open settings"),
+("tt_export", "导出到日历", "Export to calendar"),
+("tt_export_hint", "生成 .ics 文件，用日历 App 打开即可导入。", "Generates an .ics file; open it with a calendar app to import."),
+("tt_export_failed", "导出失败：%1$s", "Export failed: %1$s"),
+("tt_synced_at", "同步于 %1$s", "Synced %1$s"),
+("tt_term", "%1$d–%2$d · %3$s", "%1$d–%2$d · %3$s"),
+("tt_term_autumn", "秋季学期", "Autumn term"),
+("tt_term_spring", "春季学期", "Spring term"),
+("tt_time", "时间", "Time"),
+("tt_room", "教室", "Room"),
+("tt_teacher", "教师", "Teacher"),
+("tt_class", "班级", "Class"),
+("tt_note", "内容", "Topic"),
+("tt_periods", "第 %1$s 节", "Period %1$s"),
+("tt_weekday_n", "%1$s", "%1$s"),
+("tt_mon", "周一", "Mon"), ("tt_tue", "周二", "Tue"), ("tt_wed", "周三", "Wed"), ("tt_thu", "周四", "Thu"),
+("tt_fri", "周五", "Fri"), ("tt_sat", "周六", "Sat"), ("tt_sun", "周日", "Sun"),
+# interactive window (AI-rendered HTML/CSS/JS)
+("grp_interactive", "互动窗口", "Interactive view"),
+("grp_interactive_desc", "让助手用代码渲染可点、可拖的轻量互动画面", "Let the assistant render small interactive scenes in code"),
+("tool_interactive", "互动窗口", "Interactive view"),
+("act_interactive_live", "正在绘制互动窗口", "Drawing an interactive view"),
+("act_interactive_done", "已绘制互动窗口", "Drew an interactive view"),
+("interactive_open", "打开互动窗口", "Open interactive view"),
+("interactive_default_title", "互动窗口", "Interactive view"),
+("interactive_reload", "重新加载", "Reload"),
+("interactive_error", "互动内容已丢失，请让助手重新生成", "This interactive view is gone. Ask the assistant to draw it again."),
+("interactive_open_failed", "打不开互动窗口", "Could not open the interactive view"),
 ]
 def esc(s):
-    s = s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace("'", "\\'").replace('"', '\\"')
+    s = s.replace('\\', '\\\\').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace("'", "\\'").replace('"', '\\"')
     if s.startswith(' ') or s.endswith(' ') or s == '': s = '"' + s + '"'
     if s.startswith('@') or s.startswith('?'): s = '\\' + s
     return s
@@ -545,12 +608,21 @@ def kept_entries(path):
     except Exception:
         return []
     table = {row[0] for row in S}
-    return [(e.get('name'), e.text or '') for e in root if e.tag == 'string' and e.get('name') and e.get('name') not in table]
+    def unescape(v):
+        # Earlier runs of this script re-escaped the escapes it had just written, so a kept
+        # value can carry \\\' or even \\\\\\\'. Peel those layers back to the intended text;
+        # esc() then writes exactly one layer.
+        for _ in range(6):
+            nxt = re.sub(r"\\(['\"\\\\])", r"\1", v)
+            if nxt == v: break
+            v = nxt
+        return v
+    return [(e.get('name'), unescape(e.text or '')) for e in root if e.tag == 'string' and e.get('name') and e.get('name') not in table]
 for d, idx in (('values', 1), ('values-en', 2)):
     os.makedirs(os.path.join(out, d), exist_ok=True)
     path = os.path.join(out, d, 'strings.xml')
     kept = kept_entries(path)
-    with open(path, 'w', encoding='utf-8') as f:
+    with open(path, 'w', encoding='utf-8', newline='\n') as f:
         f.write('<?xml version="1.0" encoding="utf-8"?>\n<!-- Generated by tools/ui/strings.py (zh primary, en in values-en). Edit the table there. -->\n<resources>\n')
         for row in S:
             v = row[idx]

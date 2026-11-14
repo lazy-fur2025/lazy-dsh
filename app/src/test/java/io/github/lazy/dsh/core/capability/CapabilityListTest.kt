@@ -9,6 +9,8 @@ import io.github.lazy.dsh.core.capability.tools.ClipboardTools
 import io.github.lazy.dsh.core.capability.tools.CommsTools
 import io.github.lazy.dsh.core.capability.tools.FileTools
 import io.github.lazy.dsh.core.capability.tools.KnowledgeTools
+import io.github.lazy.dsh.core.capability.tools.ImageTools
+import io.github.lazy.dsh.core.capability.tools.InteractiveTools
 import io.github.lazy.dsh.core.capability.tools.MediaTools
 import io.github.lazy.dsh.core.capability.tools.NotificationTools
 import io.github.lazy.dsh.core.capability.tools.RuleTools
@@ -56,7 +58,7 @@ class CapabilityListTest {
     private fun listed(): List<ToolDescriptor> = listOf(
         FileTools::class.java, AppTools::class.java, ScreenTools::class.java, SystemTools::class.java, NotificationTools::class.java,
         CommsTools::class.java, MediaTools::class.java, ClipboardTools::class.java, BrowserTools::class.java, RuleTools::class.java,
-        KnowledgeTools::class.java, TimetableTools::class.java,
+        KnowledgeTools::class.java, TimetableTools::class.java, InteractiveTools::class.java,
     ).flatMap { build(it).tools }.map { CapabilityHub.listed(it) }
 
     @Test fun `descriptors stay within the token budget`() {
@@ -75,10 +77,9 @@ class CapabilityListTest {
         /** rule_create (the RuleSpec reference) is the largest at ~2.1k characters. */
         const val PER_TOOL = 2_200
         /**
-         * All ~74 tools, as JSON (descriptions are most of it): ~44k characters ≈ 11-12k tokens,
-         * about 600 per tool. Bumped twice while the timetable group (7 tools) was written; keep the
-         * per-tool average here rather than letting the total drift.
+         * All ~75 tools, as JSON (descriptions are most of it). Bumped when the interactive window
+         * tool was added; keep the per-tool average here rather than letting the total drift.
          */
-        const val TOTAL = 44_500
+        const val TOTAL = 47_000
     }
 }

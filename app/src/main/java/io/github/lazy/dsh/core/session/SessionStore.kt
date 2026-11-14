@@ -306,6 +306,7 @@ class SessionStore @Inject constructor(
             fail(sessionId, "engine", context.getString(R.string.err_engine_crash_loop), null, retryText)
             return
         }
+        var promptSent = false
         try {
             val sdk = engine.sdk()
             mutate(sessionId) { it.copy(startingEngine = false) }
@@ -324,6 +325,7 @@ class SessionStore @Inject constructor(
                     images.forEach { (mime, data) -> addJsonObject { put("type", "image"); put("mimeType", mime); put("data", data) } }
                 }
             })
+            promptSent = true
         } catch (e: NoCredentialsException) {
             fail(sessionId, "no_credentials", e.message ?: "", null, retryText)
         } catch (e: EngineBackgroundStartException) {
@@ -339,6 +341,10 @@ class SessionStore @Inject constructor(
         } catch (e: JsonRpcException) {
             fail(sessionId, "engine", e.message ?: "", e.code.toString(), retryText)
         } catch (e: kotlinx.coroutines.CancellationException) {
+            // The screen that sent this went away while the engine was still starting (the quick
+            // panel is easy to dismiss). Nothing reached the engine, so roll the turn back instead
+            // of leaving the conversation stuck on 正在启动服务 with a running flag no turn clears.
+            if (!promptSent) mutate(sessionId) { it.copy(running = false, startingEngine = false) }
             throw e
         } catch (e: Exception) {
             fail(sessionId, "engine", e.message ?: e.javaClass.simpleName, null, retryText)
@@ -367,6 +373,14 @@ class SessionStore @Inject constructor(
 
     /** Fire-and-forget [prompt] in the store's own scope (callers that are about to go away, e.g. a notification trampoline). */
     fun launchPrompt(sessionId: String, text: String, ruleId: Long? = null) { scope.launch { prompt(sessionId, text, ruleId) } }
+
+    /**
+     * Sends a composer message in the store's scope, so closing the quick panel (or leaving the
+     * screen) during the engine's cold start cannot cancel the run before it reaches the engine.
+     */
+    fun launchSend(sessionId: String, text: String, images: List<Pair<String, String>> = emptyList(), now: Boolean = false) {
+        scope.launch { send(sessionId, text, images, now) }
+    }
 
     /**
      * Re-sends after a failure (重试): retries the prompt, or asks to continue. The session shows

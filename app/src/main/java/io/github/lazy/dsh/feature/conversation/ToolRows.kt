@@ -32,7 +32,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.lazy.dsh.R
 import io.github.lazy.dsh.core.capability.ShotStore
+import io.github.lazy.dsh.core.designsystem.BtnSize
+import io.github.lazy.dsh.core.designsystem.BtnVariant
 import io.github.lazy.dsh.core.designsystem.CodeCard
+import io.github.lazy.dsh.core.designsystem.DButton
 import io.github.lazy.dsh.core.designsystem.DIcon
 import io.github.lazy.dsh.core.designsystem.DisclosureRow
 import io.github.lazy.dsh.core.designsystem.Dsh
@@ -50,6 +53,8 @@ import io.github.lazy.dsh.core.designsystem.StateDot
 import io.github.lazy.dsh.core.designsystem.DotKind
 import io.github.lazy.dsh.core.designsystem.pressable
 import io.github.lazy.dsh.core.designsystem.Chevron
+import io.github.lazy.dsh.core.interactive.InteractiveArtifacts
+import io.github.lazy.dsh.feature.interactive.InlineInteractive
 import io.github.lazy.dsh.core.session.Block
 import io.github.lazy.dsh.core.session.AUTO_CONTINUE
 import io.github.lazy.dsh.core.session.NETWORK_WAIT
@@ -116,6 +121,10 @@ fun ToolRow(t: Block.Tool, sessionId: String, onInspect: (String) -> Unit) {
         }
         // Screenshots and generated images are the point of the call: keep them visible without expanding.
         if (!open && shots.isNotEmpty() && (info.body == BodyKind.Screen || info.body == BodyKind.Image)) ShotStrip(shots, info.body)
+        // An interactive scene is reopened from the conversation, not only from the expanded row.
+        if (!open && info.body == BodyKind.Interactive) {
+            Box(Modifier.padding(start = 22.dp, top = 4.dp)) { InteractiveCard(t) }
+        }
     }
 }
 
@@ -155,6 +164,13 @@ private fun GroupInlineShots(t: Block.Tool, sessionId: String) {
     if (shots.isNotEmpty()) ShotStrip(shots, info.body, indent = 26.dp)
 }
 
+/** Keep the usable scene visible even when its step group is collapsed. */
+@Composable
+private fun GroupInlineInteractive(t: Block.Tool) {
+    if (ToolPresentation.info(t.name).body != BodyKind.Interactive) return
+    Box(Modifier.padding(start = 26.dp, top = 4.dp)) { InteractiveCard(t) }
+}
+
 @Composable
 fun InspectPill(onClick: () -> Unit) {
     val c = Dsh.colors
@@ -166,6 +182,46 @@ fun InspectPill(onClick: () -> Unit) {
 }
 
 private fun JsonObject.str(k: String) = (this[k] as? JsonPrimitive)?.contentOrNull
+
+/** A saved scene rendered in the conversation, with an optional full-screen viewer. */
+@Composable
+private fun InteractiveCard(t: Block.Tool) {
+    val context = LocalContext.current
+    val c = Dsh.colors
+    val result = remember(t.result) {
+        runCatching { Json.parseToJsonElement(t.result.orEmpty()) as? JsonObject }.getOrNull()
+    }
+    val id = result?.str("id")
+    val title = result?.str("title")
+    if (id.isNullOrBlank()) {
+        if (!t.result.isNullOrBlank()) CodeCard(t.result.orEmpty(), label = stringResource(R.string.tool_interactive))
+        return
+    }
+    Column {
+    Row(
+        Modifier.fillMaxWidth().clip(Radius.lg).background(c.bgLayer2).border(Hairline, c.borderL1, Radius.lg)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        DIcon(R.drawable.dsw_sparkle, size = 20.dp, tint = c.business)
+        Column(Modifier.weight(1f)) {
+            Text(title ?: stringResource(R.string.interactive_default_title), style = DshType.s14m, color = c.labelPrimary, maxLines = 1)
+            Text(stringResource(R.string.tool_interactive), style = DshType.xxs12, color = c.labelTertiary, maxLines = 1)
+        }
+        DButton(
+            stringResource(R.string.interactive_open), {
+                runCatching { context.startActivity(InteractiveArtifacts.intent(context, id)) }
+                    .onFailure {
+                        android.widget.Toast.makeText(context, R.string.interactive_open_failed, android.widget.Toast.LENGTH_SHORT).show()
+                    }
+            },
+            size = BtnSize.Sm, variant = BtnVariant.Outline, icon = R.drawable.dsw_fullscreen_outline,
+        )
+    }
+    InlineInteractive(id, t.result, Modifier.clip(Radius.lg))
+    }
+}
 
 @Composable
 private fun ToolBody(t: Block.Tool, kind: BodyKind) {
@@ -181,6 +237,7 @@ private fun ToolBody(t: Block.Tool, kind: BodyKind) {
         BodyKind.Search, BodyKind.Web, BodyKind.Text -> if (out.isNotBlank()) CodeCard(out, label = stringResource(ToolPresentation.info(t.name).title))
         BodyKind.Todo -> TodoList((t.args?.get("todos") as? JsonArray)?.mapNotNull { (it as? JsonObject)?.let { o -> (o.str("content") ?: "") to (o.str("status") ?: "pending") } } ?: emptyList())
         BodyKind.Screen, BodyKind.Image -> if (out.isNotBlank()) Text(out.take(400), style = DshType.xs13, color = c.labelTertiary)
+        BodyKind.Interactive -> InteractiveCard(t)
         BodyKind.Gesture -> {
             Column(Modifier.fillMaxWidth().clip(Radius.lg).background(c.codeBlock).border(Hairline, c.borderL1, Radius.lg).padding(horizontal = 14.dp, vertical = 8.dp)) {
                 t.args?.forEach { (k, v) -> KeyValue(k, (v as? JsonPrimitive)?.contentOrNull ?: v.toString(), mono = true) }
@@ -257,6 +314,8 @@ fun StepGroup(key: String, blocks: List<Block>, live: Boolean, sessionId: String
         }
         // A collapsed group must not hide a picture the user asked for.
         if (!expanded) tools.filter { it.state == ToolState.Done }.forEach { GroupInlineShots(it, sessionId) }
+        // ...or the scene the user asked the assistant to draw.
+        if (!expanded) tools.filter { it.state == ToolState.Done }.forEach { GroupInlineInteractive(it) }
     }
 }
 

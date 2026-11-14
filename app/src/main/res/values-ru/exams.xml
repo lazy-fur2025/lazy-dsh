@@ -1,0 +1,14 @@
+<resources>
+    <string name="tt_exams">Экзамены</string>
+    <string name="tt_exam_sync">Обновить экзамены</string>
+    <string name="tt_exam_updated">Обновлено</string>
+    <string name="tt_exam_not_synced">Расписание экзаменов ещё не загружено. Нажмите обновление.</string>
+    <string name="tt_exam_empty">Для этого семестра экзамены пока не опубликованы.</string>
+    <string name="tt_exam_login">Сессия истекла. Прежние данные сохранены; войдите снова.</string>
+    <string name="tt_exam_failed">Не удалось обновить экзамены. Прежние данные сохранены.</string>
+    <string name="tt_exam_old_term">Показаны данные другого семестра. Обновите текущий.</string>
+    <string name="tt_exam_pending">Не опубликовано</string>
+    <string name="tt_exam_campus">Кампус</string>
+    <string name="tt_exam_room">Аудитория</string>
+    <string name="tt_exam_seat">Место</string>
+</resources>

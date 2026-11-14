@@ -11,6 +11,7 @@ import io.github.lazy.dsh.core.capability.tools.ClipboardTools
 import io.github.lazy.dsh.core.capability.tools.CommsTools
 import io.github.lazy.dsh.core.capability.tools.FileTools
 import io.github.lazy.dsh.core.capability.tools.ImageTools
+import io.github.lazy.dsh.core.capability.tools.InteractiveTools
 import io.github.lazy.dsh.core.capability.tools.KnowledgeTools
 import io.github.lazy.dsh.core.capability.tools.MediaTools
 import io.github.lazy.dsh.core.capability.tools.NotificationTools
@@ -77,7 +78,7 @@ class CapabilityHub @Inject constructor(
     private val sessions: Lazy<SessionStore>,
     files: FileTools, apps: AppTools, screen: ScreenTools, system: SystemTools, notifications: NotificationTools,
     comms: CommsTools, media: MediaTools, clipboard: ClipboardTools, browser: BrowserTools, ruleTools: RuleTools,
-    knowledge: KnowledgeTools, image: ImageTools, timetable: TimetableTools,
+    knowledge: KnowledgeTools, image: ImageTools, timetable: TimetableTools, interactive: InteractiveTools,
     private val shellGate: ShellGate,
     private val guard: ActionGuard,
     private val agentScreen: AgentScreen,
@@ -85,7 +86,7 @@ class CapabilityHub @Inject constructor(
     private val experience: AppExperience,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    val allTools: Map<String, Tool> = listOf(files, apps, screen, system, notifications, comms, media, clipboard, browser, ruleTools, knowledge, image, timetable)
+    val allTools: Map<String, Tool> = listOf(files, apps, screen, system, notifications, comms, media, clipboard, browser, ruleTools, knowledge, image, timetable, interactive)
         .flatMap { it.tools }.associateBy { it.name }
     @Volatile private var bridge: JsonRpcPeer? = null
     private val liveSeq = java.util.concurrent.atomic.AtomicLong()

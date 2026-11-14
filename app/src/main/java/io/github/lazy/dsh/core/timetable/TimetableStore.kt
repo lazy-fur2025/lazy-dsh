@@ -31,6 +31,7 @@ class TimetableStore @Inject constructor(@ApplicationContext private val context
     private val dir = File(context.filesDir, "dsh-home/data/timetable")
     private val coursesFile = File(dir, "courses.json")
     private val stateFile = File(dir, "state.json")
+    private val examsFile = File(dir, "exams.json")
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true; encodeDefaults = true }
 
     fun courses(): List<Course> = runCatching {
@@ -42,6 +43,28 @@ class TimetableStore @Inject constructor(@ApplicationContext private val context
     }.getOrDefault(State())
 
     fun season(): Season = Season.of(state().season) ?: Season.Winter
+
+    @Serializable
+    data class Exams(val term: String = "", val fetchedAt: String = "", val items: List<Exam> = emptyList())
+
+    fun exams(): Exams = runCatching {
+        examsFile.bufferedReader(Charsets.UTF_8).use { json.decodeFromString(Exams.serializer(), it.readText()) }
+    }.getOrDefault(Exams())
+
+    /** A successful empty list clears old exams; failed fetches never reach this method. */
+    fun saveExams(items: List<Exam>, term: String): Exams {
+        dir.mkdirs()
+        val snapshot = Exams(term, java.time.Instant.now().toString(), items)
+        val temporary = File(dir, "exams-${java.util.UUID.randomUUID()}.tmp")
+        try {
+            temporary.writeText(json.encodeToString(Exams.serializer(), snapshot), Charsets.UTF_8)
+            java.nio.file.Files.move(temporary.toPath(), examsFile.toPath(),
+                java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        } finally {
+            temporary.delete()
+        }
+        return snapshot
+    }
 
     fun term(): Term = Term(state().term, state().firstMonday)
 

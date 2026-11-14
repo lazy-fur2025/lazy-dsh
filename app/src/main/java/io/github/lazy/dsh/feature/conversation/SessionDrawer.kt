@@ -86,6 +86,8 @@ fun SessionDrawer(
     onAutomation: () -> Unit,
     /** Opens 文件 (Office exports). */
     onFiles: () -> Unit,
+    /** Opens 课表 (the cached school timetable). */
+    onTimetable: () -> Unit,
     /** Opens Settings, optionally at a section (SettingsSection name). */
     onSettings: (String?) -> Unit,
     onClose: () -> Unit,
@@ -124,6 +126,7 @@ fun SessionDrawer(
         }
         PanelEntry(R.drawable.dsw_clock_outline, stringResource(R.string.automation), onAutomation)
         PanelEntry(R.drawable.dsw_folder_open_outline, stringResource(R.string.files), onFiles)
+        PanelEntry(R.drawable.dsw_clock_outline, stringResource(R.string.timetable), onTimetable)
         PanelEntry(R.drawable.dsw_shield_outline, stringResource(R.string.drawer_permissions)) { onSettings("Phone") }
         // The sheet's own hairline: a bolt for 电荷, leaves for 叶绿, centred between the entries and 会话.
         Box(Modifier.fillMaxWidth().padding(vertical = 10.dp), contentAlignment = Alignment.Center) {

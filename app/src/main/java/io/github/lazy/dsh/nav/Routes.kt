@@ -29,6 +29,8 @@ sealed interface Route
 @Serializable data object AutomationRoute : Route
 /** 文件: Office exports (core/office), opened in the phone's editor. */
 @Serializable data object FilesRoute : Route
+/** 课表: the cached school timetable, drawn as a week. */
+@Serializable data object TimetableRoute : Route
 /** A rule; id as a string (AutomationViewModel reads it from the SavedStateHandle). */
 @Serializable data class RuleRoute(val id: String) : Route
 

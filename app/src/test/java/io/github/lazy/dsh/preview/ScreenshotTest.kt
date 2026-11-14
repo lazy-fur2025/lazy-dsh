@@ -188,7 +188,7 @@ class ScreenshotTest {
                     Box(Modifier.fillMaxHeight().width(300.dp)) {
                         SessionDrawer(
                             PreviewFixtures.sessions, PreviewFixtures.status, "s1",
-                            onNew = {}, onOpen = {}, onAutomation = {}, onFiles = {}, onSettings = {}, onClose = {},
+                            onNew = {}, onOpen = {}, onAutomation = {}, onFiles = {}, onTimetable = {}, onSettings = {}, onClose = {},
                             onRename = { _, _ -> }, onPin = { _, _ -> }, onMute = { _, _ -> },
                             onArchive = { _, _ -> }, onDelete = {},
                         )
